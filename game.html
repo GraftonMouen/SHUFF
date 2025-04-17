@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Play Scottie Shuffler Game</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+  <style>
+    body { background-color: #1a1a1a; color: white; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+  </style>
+</head>
+<body>
+  <script>
+    const config = {
+      type: Phaser.AUTO,
+      width: 800,
+      height: 600,
+      backgroundColor: "#2d2d2d",
+      scene: {
+        preload,
+        create,
+        update
+      }
+    };
+
+    const game = new Phaser.Game(config);
+
+    let swingBar;
+    let swingPower = 0;
+    let swingDirection = 1;
+    let swinging = false;
+
+    function preload() {}
+
+    function create() {
+      this.add.text(300, 50, "Scottie Shuffler Golf", { fontSize: "24px", fill: "#ffffff" });
+      swingBar = this.add.rectangle(400, 300, swingPower, 30, 0xffff00);
+      this.input.on('pointerdown', () => {
+        if (!swinging) {
+          swinging = true;
+          swingPower = 0;
+          swingDirection = 1;
+          updateSwing();
+        }
+      });
+    }
+
+    function update() {
+      if (swinging) {
+        swingPower += swingDirection;
+        if (swingPower > 150 || swingPower < 0) {
+          swingDirection *= -1;
+        }
+        swingBar.setSize(swingPower, 30);
+      }
+    }
+
+    function updateSwing() {
+      swinging = true;
+      swingPower = 0;
+      swingDirection = 1;
+    }
+  </script>
+</body>
+</html>
