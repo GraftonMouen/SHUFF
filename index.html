@@ -1,300 +1,254 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Scottie Shuffler Coin</title>
-  <link rel="stylesheet" href="css/styles.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    /* Add the background image to the whole body */
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: url('images/background.jpg') no-repeat center center fixed;
-      background-size: cover; /* Makes the background cover the entire page */
-      color: #fff;
-      line-height: 1.6;
-    }
-
-    /* Add overlay for better text readability */
-    body::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5); /* Black overlay with 50% opacity */
-      z-index: -1; /* Put the overlay behind the content */
-    }
-
-    header {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem 2rem;
-      background-color: rgba(28, 28, 28, 0.8); /* Semi-transparent dark background */
-    }
-
-    .logo h1 {
-      font-size: 1.5rem;
-      margin: 0;
-    }
-
-    nav ul {
-      list-style: none;
-      display: flex;
-      gap: 1rem;
-      padding: 0;
-      margin: 0;
-      flex-wrap: wrap;
-    }
-
-    nav ul li a {
-      color: #fff;
-      text-decoration: none;
-      font-size: 1rem;
-    }
-
-    #walletBtn {
-      padding: 0.5rem 1rem;
-      background: #2ecc71;
-      border: none;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 0.5rem;
-    }
-
-    main {
-      padding: 1rem;
-    }
-
-    section {
-      margin-bottom: 3rem;
-    }
-
-    .chart-container {
-      max-width: 500px;
-      margin: 2rem auto;
-      padding: 1rem;
-    }
-
-    .btn {
-      background: #3498db;
-      color: white;
-      padding: 0.75rem 1.5rem;
-      text-decoration: none;
-      border-radius: 5px;
-      display: inline-block;
-      margin-top: 1rem;
-    }
-
-    footer {
-      text-align: center;
-      padding: 1rem;
-      background-color: rgba(28, 28, 28, 0.8); /* Semi-transparent dark background */
-    }
-
-    footer a {
-      color: #d3d3d3; /* Light grey color for hyperlinks */
-      text-decoration: none;
-    }
-
-    footer a:hover {
-      color: #fff; /* Change to white on hover */
-    }
-
-    code {
-      background-color: #222;
-      padding: 0.2rem 0.4rem;
-      border-radius: 3px;
-      font-size: 0.95rem;
-    }
-
-    @media (max-width: 768px) {
-      header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      nav ul {
-        flex-direction: column;
-        width: 100%;
-        gap: 0.5rem;
-        margin-top: 1rem;
-      }
-
-      nav ul li a {
-        font-size: 1rem;
-      }
-
-      .chart-container {
-        width: 100%;
-        padding: 0;
-      }
-
-      .logo h1 {
-        font-size: 1.25rem;
-      }
-
-      #walletBtn {
-        width: 100%;
-      }
-
-      .btn {
-        width: 100%;
-        text-align: center;
-      }
-    }
-
-    @media (max-width: 480px) {
-      body {
-        font-size: 0.95rem;
-      }
-
-      .logo h1 {
-        font-size: 1.1rem;
-      }
-
-      nav ul li a {
-        font-size: 0.95rem;
-      }
-
-      #walletBtn {
-        font-size: 1rem;
-      }
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <div class="logo">
-      <h1>Scottie Shuffler Coin</h1>
-    </div>
-    <nav>
-      <ul>
-        <li><a href="#about">About</a></li>
-        <li><a href="#tokenomics">Tokenomics</a></li>
-        <li><a href="#game">Game</a></li>
-        <li><a href="#how-to-buy">How to Buy</a></li>
-        <li><a href="#contact">Contact</a></li>
-      </ul>
-    </nav>
-    <button id="walletBtn">Connect Phantom Wallet</button>
-  </header>
-
-  <main>
-    <section id="about">
-        <h2>About Scottie Shuffler Coin</h2>
-        <p>Welcome to the wild ride that is <strong>$SHUFF</strong>—the meme-based token that's not just about the love of golf, but also about faith, community, and a whole lot of fun. This project isn't just about numbers; it's about <em>believing</em> in the future, one golf swing at a time.</p>
-      
-        <h3>Our Long-Term Project Plan (Warning: Highly Faith-Based and Fan-Driven)</h3>
-        <p>Here's the plan—grab your golf clubs, your faith, and your sense of humor because we're in this for the long haul...</p>
-      
-        <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #fce2b3; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-          <h4>Year 1: Build the Faithful Community</h4>
-          <p>We'll start by preaching the gospel of $SHUFF to the masses—on social media, at golf courses, at church bake sales...</p>
-        </div>
-      
-        <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #d4f3d5; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-          <h4>Year 2: The Shuffler Tournament of Faith</h4>
-          <p>We’ll host the first-ever “Shuffler Tournament of Faith,” where all the proceeds go toward charity...</p>
-        </div>
-      
-        <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #f7b8d9; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-          <h4>Year 3: Scottie Shuffler Golf Course (Possibly in Heaven)</h4>
-          <p>Now, we’re getting serious. It’s time to design the first-ever Scottie Shuffler Golf Course...</p>
-        </div>
-      
-        <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #d3e3fc; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-          <h4>Year 5: The Scottie Shuffler Crypto Church</h4>
-          <p>By year five, we’re envisioning a full-fledged “Scottie Shuffler Crypto Church”...</p>
-        </div>
-      
-        <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #f6f7b2; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-          <h4>Year 10: Scottie Shuffler’s Ascension to Crypto Godhood</h4>
-          <p>In 10 years, we expect $SHUFF to have ascended to the heavens of the crypto world...</p>
-        </div>
-      
-        <p>It’s a journey, it’s a mission, and it’s going to be one heck of a ride...</p>
-        <p>Join us as we shuffle our way to a brighter, fun-filled future!</p>
-      </section>      
-      
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="chart.js" defer></script>
-
-
-      <section id="tokenomics">
-        <h2>Tokenomics</h2>
-        <div class="chart-container" style="width: 400px; height: 400px;">
-          <canvas id="tokenomicsChart"></canvas>
-        </div>
-      </section>
-      
-
-    <section id="game">
-      <h2>Play the Game!</h2>
-      <p>Join the Scottie Shuffler mini-golf fun. Test your swing!</p>
-      <a href="game.html" class="btn">Play Now</a>
-    </section>
-
-    <section id="how-to-buy">
-      <h2>How to Buy</h2>
-      <ol>
-        <li>Download the Phantom Wallet.</li>
-        <li>Go to Pump.fun and search: <strong>Scottie Shuffler Coin</strong></li>
-        <li>Contract Address: <code>GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump</code></li>
-      </ol>
-    </section>
-
-    <section id="contact">
-      <h2>Contact</h2>
-      <p>Follow us on <a href="#">Twitter</a> and <a href="#">Discord</a>.</p>
-    </section>
-  </main>
-
-  <footer>
-    <p>Made with love by the Scottie Shuffler team. Connect with us on <a href="#">Discord</a> for updates!</p>
-  </footer>
-
-  <!-- Phantom Wallet connection script -->
-  <script>
-    const walletBtn = document.getElementById('walletBtn');
-
-    walletBtn.addEventListener('click', async () => {
-      try {
-        if (window.solana && window.solana.isPhantom) {
-          const response = await window.solana.connect();
-          console.log('Connected with public key:', response.publicKey.toString());
-          walletBtn.textContent = 'Wallet Connected';
-          walletBtn.style.backgroundColor = '#1abc9c';
-        } else {
-          alert('Phantom Wallet not found! Please install it from https://phantom.app');
-        }
-      } catch (err) {
-        console.error('Wallet connection failed:', err);
-      }
-    });
-
-    window.addEventListener('load', async () => {
-      if (window.solana && window.solana.isPhantom) {
-        try {
-          const resp = await window.solana.connect({ onlyIfTrusted: true });
-          walletBtn.textContent = 'Wallet Connected';
-          walletBtn.style.backgroundColor = '#1abc9c';
-        } catch (err) {
-          // Silent fail — user hasn't connected yet
-        }
-      }
-    });
-  </script>
-</body>
-</html>
+ <html lang="en">
+ <head>
+   <meta charset="UTF-8" />
+   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+   <title>Scottie Shuffler Coin</title>
+   <link rel="stylesheet" href="css/styles.css" />
+   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+   <style>
+     * {
+       box-sizing: border-box;
+     }
+ 
+     /* Add the background image to the whole body */
+     body {
+       margin: 0;
+       font-family: 'Segoe UI', sans-serif;
+       background: url('images/background.jpg') no-repeat center center fixed;
+       background-size: cover; /* Makes the background cover the entire page */
+       color: #fff;
+       line-height: 1.6;
+     }
+ 
+     /* Add overlay for better text readability */
+     body::after {
+       content: "";
+       position: absolute;
+       top: 0;
+       left: 0;
+       width: 100%;
+       height: 100%;
+       background: rgba(0, 0, 0, 0.5); /* Black overlay with 50% opacity */
+       z-index: -1; /* Put the overlay behind the content */
+     }
+ 
+     header {
+       display: flex;
+       flex-wrap: wrap;
+       justify-content: space-between;
+       align-items: center;
+       padding: 1rem 2rem;
+       background-color: rgba(28, 28, 28, 0.8); /* Semi-transparent dark background */
+     }
+ 
+     .logo h1 {
+       font-size: 1.5rem;
+       margin: 0;
+     }
+ 
+     nav ul {
+       list-style: none;
+       display: flex;
+       gap: 1rem;
+       padding: 0;
+       margin: 0;
+       flex-wrap: wrap;
+     }
+ 
+     nav ul li a {
+       color: #fff;
+       text-decoration: none;
+       font-size: 1rem;
+     }
+ 
+     #walletBtn {
+       padding: 0.5rem 1rem;
+       background: #2ecc71;
+       border: none;
+       color: white;
+       border-radius: 5px;
+       cursor: pointer;
+       margin-top: 0.5rem;
+     }
+ 
+     main {
+       padding: 1rem;
+     }
+ 
+     section {
+       margin-bottom: 3rem;
+     }
+ 
+     .chart-container {
+       max-width: 500px;
+       margin: 2rem auto;
+       padding: 1rem;
+     }
+ 
+     .btn {
+       background: #3498db;
+       color: white;
+       padding: 0.75rem 1.5rem;
+       text-decoration: none;
+       border-radius: 5px;
+       display: inline-block;
+       margin-top: 1rem;
+     }
+ 
+     footer {
+       text-align: center;
+       padding: 1rem;
+       background-color: rgba(28, 28, 28, 0.8); /* Semi-transparent dark background */
+     }
+ 
+     footer a {
+       color: #d3d3d3; /* Light grey color for hyperlinks */
+       text-decoration: none;
+     }
+ 
+     footer a:hover {
+       color: #fff; /* Change to white on hover */
+     }
+ 
+     code {
+       background-color: #222;
+       padding: 0.2rem 0.4rem;
+       border-radius: 3px;
+       font-size: 0.95rem;
+     }
+ 
+     @media (max-width: 768px) {
+       header {
+         flex-direction: column;
+         align-items: flex-start;
+       }
+ 
+       nav ul {
+         flex-direction: column;
+         width: 100%;
+         gap: 0.5rem;
+         margin-top: 1rem;
+       }
+ 
+       nav ul li a {
+         font-size: 1rem;
+       }
+ 
+       .chart-container {
+         width: 100%;
+         padding: 0;
+       }
+ 
+       .logo h1 {
+         font-size: 1.25rem;
+       }
+ 
+       #walletBtn {
+         width: 100%;
+       }
+ 
+       .btn {
+         width: 100%;
+         text-align: center;
+       }
+     }
+ 
+     @media (max-width: 480px) {
+       body {
+         font-size: 0.95rem;
+       }
+ 
+       .logo h1 {
+         font-size: 1.1rem;
+       }
+ 
+       nav ul li a {
+         font-size: 0.95rem;
+       }
+ 
+       #walletBtn {
+         font-size: 1rem;
+       }
+     }
+   </style>
+ </head>
+ <body>
+   <header>
+     <div class="logo">
+       <h1>Scottie Shuffler Coin</h1>
+     </div>
+     <nav>
+       <ul>
+         <li><a href="#about">About</a></li>
+         <li><a href="#tokenomics">Tokenomics</a></li>
+         <li><a href="#game">Game</a></li>
+         <li><a href="#how-to-buy">How to Buy</a></li>
+         <li><a href="#contact">Contact</a></li>
+       </ul>
+     </nav>
+     <button id="walletBtn">Connect Phantom Wallet</button>
+   </header>
+ 
+   <main>
+     <section id="about">
+         <h2>About Scottie Shuffler Coin</h2>
+         <p>Welcome to the wild ride that is <strong>$SHUFF</strong>—the meme-based token that's not just about the love of golf, but also about faith, community, and a whole lot of fun. This project isn't just about numbers; it's about <em>believing</em> in the future, one golf swing at a time.</p>
+ 
+         <h3>Our Long-Term Project Plan (Warning: Highly Faith-Based and Fan-Driven)</h3>
+         <p>Here's the plan—grab your golf clubs, your faith, and your sense of humor because we're in this for the long haul...</p>
+ 
+         <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #fce2b3; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+           <h4>Year 1: Build the Faithful Community</h4>
+           <p>We'll start by preaching the gospel of $SHUFF to the masses—on social media, at golf courses, at church bake sales...</p>
+         </div>
+ 
+         <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #d4f3d5; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+           <h4>Year 2: The Shuffler Tournament of Faith</h4>
+           <p>We’ll host the first-ever “Shuffler Tournament of Faith,” where all the proceeds go toward charity...</p>
+         </div>
+ 
+         <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #f7b8d9; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+           <h4>Year 3: Scottie Shuffler Golf Course (Possibly in Heaven)</h4>
+           <p>Now, we’re getting serious. It’s time to design the first-ever Scottie Shuffler Golf Course...</p>
+         </div>
+ 
+         <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #d3e3fc; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+           <h4>Year 5: The Scottie Shuffler Crypto Church</h4>
+           <p>By year five, we’re envisioning a full-fledged “Scottie Shuffler Crypto Church”...</p>
+         </div>
+ 
+         <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #f6f7b2; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+           <h4>Year 10: Scottie Shuffler’s Ascension to Crypto Godhood</h4>
+           <p>In 10 years, we expect $SHUFF to have ascended to the heavens of the crypto world...</p>
+         </div>
+ 
+         <p>It’s a journey, it’s a mission, and it’s going to be one heck of a ride...</p>
+         <p>Join us as we shuffle our way to a brighter, fun-filled future!</p>
+       </section>      
+ 
+ 
+     <section id="tokenomics">
+       <h2>Tokenomics</h2>
+       <div class="chart-container">
+         <canvas id="tokenomicsChart"></canvas>
+       </div>
+     </section>
+     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+     <script src="chart.js" defer></script>
+ 
+ 
+       <section id="tokenomics">
+         <h2>Tokenomics</h2>
+         <div class="chart-container" style="width: 400px; height: 400px;">
+           <canvas id="tokenomicsChart"></canvas>
+         </div>
+       </section>
+       
+ 
+     <section id="game">
+       <h2>Play the Game!</h2>
+ @@ -293,3 +298,4 @@
+   </script>
+ </body>
+ </html>
