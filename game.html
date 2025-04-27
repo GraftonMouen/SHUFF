@@ -2,64 +2,138 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Play Scottie Shuffler Game</title>
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+  <title>Golf Game</title>
   <style>
-    body { background-color: #1a1a1a; color: white; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    body { text-align: center; background: #e8f8e8; font-family: Arial, sans-serif; }
+    #game-canvas { border: 1px solid #000; margin-top: 20px; }
+    #wallet-info, #leaderboard { display: none; margin-top: 20px; }
+    button, input { margin: 10px; padding: 10px; font-size: 16px; }
   </style>
+  <!-- Solana Web3.js -->
+  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
 </head>
 <body>
-  <script>
-    const config = {
-      type: Phaser.AUTO,
-      width: 800,
-      height: 600,
-      backgroundColor: "#2d2d2d",
-      scene: {
-        preload,
-        create,
-        update
-      }
-    };
 
-    const game = new Phaser.Game(config);
+<h1>🏌️‍♂️ Solana Golf Game</h1>
 
-    let swingBar;
-    let swingPower = 0;
-    let swingDirection = 1;
-    let swinging = false;
+<button id="connect-wallet-btn">Connect Wallet</button>
 
-    function preload() {}
+<div id="wallet-info">
+  <p>Wallet Address: <span id="wallet-address"></span></p>
+</div>
 
-    function create() {
-      this.add.text(300, 50, "Scottie Shuffler Golf", { fontSize: "24px", fill: "#ffffff" });
-      swingBar = this.add.rectangle(400, 300, swingPower, 30, 0xffff00);
-      this.input.on('pointerdown', () => {
-        if (!swinging) {
-          swinging = true;
-          swingPower = 0;
-          swingDirection = 1;
-          updateSwing();
-        }
-      });
-    }
+<input type="number" id="swing-amount" placeholder="Enter amount ($SOL)" min="0.001" step="0.001">
+<button id="swing-btn" disabled>Swing!</button>
 
-    function update() {
-      if (swinging) {
-        swingPower += swingDirection;
-        if (swingPower > 150 || swingPower < 0) {
-          swingDirection *= -1;
-        }
-        swingBar.setSize(swingPower, 30);
-      }
-    }
+<div id="status"></div>
 
-    function updateSwing() {
-      swinging = true;
-      swingPower = 0;
-      swingDirection = 1;
-    }
-  </script>
+<canvas id="game-canvas" width="800" height="400"></canvas>
+
+<div id="leaderboard">
+  <h2>🏆 Leaderboard</h2>
+  <ul id="leaderboard-list"></ul>
+</div>
+
+<script>
+// Globals
+let walletAddress = null;
+const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
+const liquidityWallet = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump');
+
+async function connectWallet() {
+  try {
+    const resp = await window.solana.connect();
+    walletAddress = resp.publicKey.toString();
+    document.getElementById('wallet-address').innerText = walletAddress;
+    document.getElementById('wallet-info').style.display = 'block';
+    document.getElementById('swing-btn').disabled = false;
+  } catch (err) {
+    console.error(err);
+    alert('Wallet connection failed!');
+  }
+}
+
+async function sendTransaction(amount) {
+  try {
+    const provider = window.solana;
+    const fromPubkey = provider.publicKey;
+    const lamportsTotal = solanaWeb3.LAMPORTS_PER_SOL * amount;
+    const lamports25 = lamportsTotal * 0.25;
+
+    let transaction = new solanaWeb3.Transaction().add(
+      solanaWeb3.SystemProgram.transfer({
+        fromPubkey: fromPubkey,
+        toPubkey: liquidityWallet,
+        lamports: lamports25
+      })
+    );
+
+    let { blockhash } = await connection.getRecentBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = fromPubkey;
+
+    const signed = await provider.signTransaction(transaction);
+    const signature = await connection.sendRawTransaction(signed.serialize());
+    await connection.confirmTransaction(signature);
+
+    document.getElementById('status').innerText = '🏌️‍♂️ Swing successful!';
+    animateGolfBall();
+    updateLeaderboard(walletAddress, amount);
+  } catch (err) {
+    console.error(err);
+    alert('Transaction failed!');
+  }
+}
+
+function animateGolfBall() {
+  const canvas = document.getElementById('game-canvas');
+  const ctx = canvas.getContext('2d');
+  let x = 50, y = 300, vx = 8, vy = -12, gravity = 0.5;
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+    ctx.arc(x, y, 10, 0, Math.PI * 2);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  function update() {
+    x += vx;
+    y += vy;
+    vy += gravity;
+    if (y > canvas.height - 10) { vy = -vy * 0.6; y = canvas.height - 10; }
+  }
+
+  function loop() {
+    update();
+    draw();
+    if (x < canvas.width) requestAnimationFrame(loop);
+  }
+
+  loop();
+}
+
+function updateLeaderboard(address, amount) {
+  const leaderboard = document.getElementById('leaderboard-list');
+  const entry = document.createElement('li');
+  entry.innerText = `${address.slice(0, 4)}... swung ${amount} SOL!`;
+  leaderboard.appendChild(entry);
+  document.getElementById('leaderboard').style.display = 'block';
+}
+
+document.getElementById('connect-wallet-btn').addEventListener('click', connectWallet);
+
+document.getElementById('swing-btn').addEventListener('click', async () => {
+  const amount = parseFloat(document.getElementById('swing-amount').value);
+  if (!amount || amount <= 0) {
+    alert('Enter a valid amount!');
+    return;
+  }
+  await sendTransaction(amount);
+});
+</script>
+
 </body>
 </html>
