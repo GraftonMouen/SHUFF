@@ -2,19 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Golf Game</title>
+  <title>Solana Golf Game ($SHUFF)</title>
   <style>
     body { text-align: center; background: #e8f8e8; font-family: Arial, sans-serif; }
     #game-canvas { border: 1px solid #000; margin-top: 20px; }
     #wallet-info, #leaderboard { display: none; margin-top: 20px; }
     button, input { margin: 10px; padding: 10px; font-size: 16px; }
+
+    /* Spinner styling */
+    #loading-spinner {
+      display: none;
+      margin-top: 20px;
+    }
+    .spinner {
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid #3498db;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
+
   <!-- Solana Web3.js -->
   <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+
+  <!-- Solana SPL Token.js (for $SHUFF token transfers) -->
+  <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.3.5/lib/index.iife.min.js"></script>
 </head>
+
 <body>
 
-<h1>🏌️‍♂️ Solana Golf Game</h1>
+<h1>🏌️‍♂️ Solana Golf Game ($SHUFF)</h1>
 
 <button id="connect-wallet-btn">Connect Wallet</button>
 
@@ -22,10 +46,16 @@
   <p>Wallet Address: <span id="wallet-address"></span></p>
 </div>
 
-<input type="number" id="swing-amount" placeholder="Enter amount ($SOL)" min="0.001" step="0.001">
+<input type="number" id="swing-amount" placeholder="Enter amount ($SHUFF)" min="0.001" step="0.001">
 <button id="swing-btn" disabled>Swing!</button>
 
 <div id="status"></div>
+
+<!-- Loading spinner -->
+<div id="loading-spinner">
+  <div class="spinner"></div>
+  <p>Processing transaction...</p>
+</div>
 
 <canvas id="game-canvas" width="800" height="400"></canvas>
 
@@ -39,6 +69,7 @@
 let walletAddress = null;
 const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
 const liquidityWallet = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump');
+const shuffMint = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump'); // your $SHUFF token mint
 
 async function connectWallet() {
   try {
@@ -53,24 +84,48 @@ async function connectWallet() {
   }
 }
 
+// Send $SHUFF token
 async function sendTransaction(amount) {
+  const loadingSpinner = document.getElementById('loading-spinner');
   try {
+    loadingSpinner.style.display = 'block'; // Show spinner
+
     const provider = window.solana;
     const fromPubkey = provider.publicKey;
-    const lamportsTotal = solanaWeb3.LAMPORTS_PER_SOL * amount;
-    const lamports25 = lamportsTotal * 0.25;
 
-    let transaction = new solanaWeb3.Transaction().add(
-      solanaWeb3.SystemProgram.transfer({
-        fromPubkey: fromPubkey,
-        toPubkey: liquidityWallet,
-        lamports: lamports25
-      })
+    // Get user's token account
+    const fromTokenAccounts = await connection.getTokenAccountsByOwner(fromPubkey, { mint: shuffMint });
+    if (fromTokenAccounts.value.length === 0) {
+      alert('No $SHUFF tokens found in your wallet.');
+      return;
+    }
+    const fromTokenAccountPubkey = fromTokenAccounts.value[0].pubkey;
+
+    // Get (or create) the recipient token account
+    let toTokenAccounts = await connection.getTokenAccountsByOwner(liquidityWallet, { mint: shuffMint });
+    let toTokenAccountPubkey;
+    if (toTokenAccounts.value.length > 0) {
+      toTokenAccountPubkey = toTokenAccounts.value[0].pubkey;
+    } else {
+      // Normally you should create Associated Token Account here
+      alert('Recipient does not have a $SHUFF account set up.');
+      return;
+    }
+
+    const tokenAmount = BigInt(amount * 1e9); // assuming $SHUFF has 9 decimals like SOL
+
+    const transferIx = splToken.createTransferInstruction(
+      fromTokenAccountPubkey,
+      toTokenAccountPubkey,
+      fromPubkey,
+      tokenAmount
     );
 
-    let { blockhash } = await connection.getRecentBlockhash();
-    transaction.recentBlockhash = blockhash;
-    transaction.feePayer = fromPubkey;
+    const latestBlockhash = await connection.getLatestBlockhash();
+    const transaction = new solanaWeb3.Transaction({
+      recentBlockhash: latestBlockhash.blockhash,
+      feePayer: fromPubkey,
+    }).add(transferIx);
 
     const signed = await provider.signTransaction(transaction);
     const signature = await connection.sendRawTransaction(signed.serialize());
@@ -82,34 +137,65 @@ async function sendTransaction(amount) {
   } catch (err) {
     console.error(err);
     alert('Transaction failed!');
+  } finally {
+    loadingSpinner.style.display = 'none'; // Always hide spinner
   }
 }
 
 function animateGolfBall() {
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
-  let x = 50, y = 300, vx = 8, vy = -12, gravity = 0.5;
+  let x = 50, y = 300;
+  let vx = 10;   // initial horizontal speed
+  let vy = -18;  // initial upward velocity
+  const gravity = 0.6;
+  const friction = 0.98;
+  const ground = canvas.height - 10;
+  let rolling = false;
 
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     ctx.beginPath();
     ctx.arc(x, y, 10, 0, Math.PI * 2);
     ctx.fillStyle = 'white';
     ctx.fill();
     ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0, ground);
+    ctx.lineTo(canvas.width, ground);
+    ctx.strokeStyle = 'green';
+    ctx.lineWidth = 2;
+    ctx.stroke();
   }
 
   function update() {
-    x += vx;
-    y += vy;
-    vy += gravity;
-    if (y > canvas.height - 10) { vy = -vy * 0.6; y = canvas.height - 10; }
+    if (!rolling) {
+      x += vx;
+      y += vy;
+      vy += gravity;
+
+      if (y >= ground) {
+        y = ground;
+        vy = 0;
+        rolling = true;
+      }
+    } else {
+      x += vx;
+      vx *= friction;
+      if (Math.abs(vx) < 0.5) {
+        vx = 0;
+      }
+    }
   }
 
   function loop() {
     update();
     draw();
-    if (x < canvas.width) requestAnimationFrame(loop);
+    if (x < canvas.width && (vx !== 0 || !rolling)) {
+      requestAnimationFrame(loop);
+    }
   }
 
   loop();
@@ -118,7 +204,7 @@ function animateGolfBall() {
 function updateLeaderboard(address, amount) {
   const leaderboard = document.getElementById('leaderboard-list');
   const entry = document.createElement('li');
-  entry.innerText = `${address.slice(0, 4)}... swung ${amount} SOL!`;
+  entry.innerText = `${address.slice(0, 4)}... swung ${amount} SHUFF!`;
   leaderboard.appendChild(entry);
   document.getElementById('leaderboard').style.display = 'block';
 }
