@@ -2,12 +2,12 @@ const ctx = document.getElementById('tokenomicsChart').getContext('2d');
 const tokenomicsChart = new Chart(ctx, {
   type: 'pie',
   data: {
-    labels: ['Liquidity', 'Development Fund', 'Community Rewards', 'Marketing', 'Treasury'],
+    labels: ['Liquidity', 'Treasury', 'Community Rewards', 'Marketing', 'Development Fund'],
     datasets: [{
       label: 'Token Distribution',
       data: [35, 25, 20, 10, 10], // Adjust percentages here
-      backgroundColor: ['#28a745', '#f39c12', '#3498db', '#e74c3c'],
-      borderColor: ['#ffffff', '#ffffff', '#ffffff', '#ffffff'],
+      backgroundColor: ['#28a745', '#f39c12', '#3498db', '#e74c3c', '#808080'],
+      borderColor: ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff'],
       borderWidth: 2
     }]
   },
