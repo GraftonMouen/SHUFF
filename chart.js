@@ -2,7 +2,7 @@ const ctx = document.getElementById('tokenomicsChart').getContext('2d');
 const tokenomicsChart = new Chart(ctx, {
   type: 'pie',
   data: {
-    labels: ['Liquidity', 'Treasury', 'Community Rewards', 'Marketing', 'Development Fund'],
+    labels: ['Liquidity', 'Treasury', 'Community Rewards', 'Charity', 'Marketing', 'Development Fund'],
     datasets: [{
       label: 'Token Distribution',
       data: [30, 25, 20, 5, 5, 10], // Adjust percentages here
