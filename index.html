@@ -86,6 +86,14 @@
 
     section {
       margin-bottom: 3rem;
+      opacity: 0;
+      transform: translateY(50px);
+      transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    }
+
+    section.reveal {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .chart-container {
@@ -124,6 +132,34 @@
       padding: 0.2rem 0.4rem;
       border-radius: 3px;
       font-size: 0.95rem;
+    }
+
+    .hero {
+      padding: 4rem 2rem;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.6);
+      margin-bottom: 3rem;
+      opacity: 1;
+      transform: none;
+    }
+
+    .hero h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .hero p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+    }
+
+    .hero .btn {
+      background: #2ecc71;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 1.2rem;
     }
 
     @media (max-width: 768px) {
@@ -200,44 +236,47 @@
   </header>
 
   <main>
-    <section id="about">
-        <h2>About The Shuffler Coin</h2>
-        <p>Welcome to the wild ride that is <strong>$SHUFF</strong>—the meme-based token that's not just about the love of golf, but also about faith, community, and a whole lot of fun. This project isn't just about numbers; it's about <em>believing</em> in the future, one golf swing at a time.</p>
-      
-        <h3>Our Long-Term Project Plan (Warning: Highly Faith-Based and Fan-Driven)</h3>
-        <p>Here's the plan—grab your golf clubs, your faith, and your sense of humor because we're in this for the long haul...</p>
-      
-        <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #fce2b3; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-          <h4>Year 1: Build the Faithful Community</h4>
-          <p>We'll start by preaching the gospel of $SHUFF to the masses—on social media, at golf courses, at church bake sales...</p>
-        </div>
-      
-        <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #d4f3d5; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-          <h4>Year 2: The Shuffler Tournament of Faith</h4>
-          <p>We’ll host the first-ever “Shuffler Tournament of Faith,” where all the proceeds go toward charity...</p>
-        </div>
-      
-        <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #f7b8d9; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-          <h4>Year 3: Shuffler Golf Course (Possibly in Heaven)</h4>
-          <p>Now, we’re getting serious. It’s time to design the first-ever Scottie Shuffler Golf Course...</p>
-        </div>
-      
-        <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #d3e3fc; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-          <h4>Year 5: The Shuffler Crypto Church</h4>
-          <p>By year five, we’re envisioning a full-fledged “Scottie Shuffler Crypto Church”...</p>
-        </div>
-      
-        <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #f6f7b2; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-          <h4>Year 10: Shuffler’s Ascension to Crypto Godhood</h4>
-          <p>In 10 years, we expect $SHUFF to have ascended to the heavens of the crypto world...</p>
-        </div>
-      
-        <p>It’s a journey, it’s a mission, and it’s going to be one heck of a ride...</p>
-        <p>Join us as we shuffle our way to a brighter, fun-filled future!</p>
-      </section>      
+    <section class="hero">
+      <h1>Welcome to The Shuffler Coin</h1>
+      <p>Faith, Fun, and a Little Bit of Golf Magic ⛳✨</p>
+      <a href="#about" class="btn">Learn More</a>
+    </section>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="chart.js" defer></script>
+    <section id="about">
+      <h2>About The Shuffler Coin</h2>
+      <p>Welcome to the wild ride that is <strong>$SHUFF</strong>—the meme-based token that's not just about the love of golf, but also about faith, community, and a whole lot of fun. This project isn't just about numbers; it's about <em>believing</em> in the future, one golf swing at a time.</p>
+
+      <h3>Our Long-Term Project Plan (Warning: Highly Faith-Based and Fan-Driven)</h3>
+      <p>Here's the plan—grab your golf clubs, your faith, and your sense of humor because we're in this for the long haul...</p>
+
+      <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #fce2b3; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+        <h4>Year 1: Build the Faithful Community</h4>
+        <p>We'll start by preaching the gospel of $SHUFF to the masses—on social media, at golf courses, at church bake sales...</p>
+      </div>
+
+      <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #d4f3d5; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+        <h4>Year 2: The Shuffler Tournament of Faith</h4>
+        <p>We’ll host the first-ever “Shuffler Tournament of Faith,” where all the proceeds go toward charity...</p>
+      </div>
+
+      <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #f7b8d9; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+        <h4>Year 3: Shuffler Golf Course (Possibly in Heaven)</h4>
+        <p>Now, we’re getting serious. It’s time to design the first-ever Scottie Shuffler Golf Course...</p>
+      </div>
+
+      <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #d3e3fc; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+        <h4>Year 5: The Shuffler Crypto Church</h4>
+        <p>By year five, we’re envisioning a full-fledged “Scottie Shuffler Crypto Church”...</p>
+      </div>
+
+      <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #f6f7b2; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+        <h4>Year 10: Shuffler’s Ascension to Crypto Godhood</h4>
+        <p>In 10 years, we expect $SHUFF to have ascended to the heavens of the crypto world...</p>
+      </div>
+
+      <p>It’s a journey, it’s a mission, and it’s going to be one heck of a ride...</p>
+      <p>Join us as we shuffle our way to a brighter, fun-filled future!</p>
+    </section>
 
     <section id="tokenomics">
       <h2>Tokenomics</h2>
@@ -300,6 +339,20 @@
         }
       }
     });
+
+    // Smooth Scroll Reveal (excluding hero)
+    const sections = document.querySelectorAll('section:not(.hero)');
+    window.addEventListener('scroll', () => {
+      const triggerBottom = window.innerHeight * 0.85;
+      sections.forEach(section => {
+        const sectionTop = section.getBoundingClientRect().top;
+        if (sectionTop < triggerBottom) {
+          section.classList.add('reveal');
+        }
+      });
+    });
   </script>
+
+  <script src="chart.js" defer></script>
 </body>
 </html>
