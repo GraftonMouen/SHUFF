@@ -2,18 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Solana Golf Game ($SHUFF)</title>
+  <title>Golf Game</title>
   <style>
     body { text-align: center; background: #e8f8e8; font-family: Arial, sans-serif; }
     #game-canvas { border: 1px solid #000; margin-top: 20px; }
     #wallet-info, #leaderboard { display: none; margin-top: 20px; }
     button, input { margin: 10px; padding: 10px; font-size: 16px; }
-
-    /* Spinner styling */
-    #loading-spinner {
-      display: none;
-      margin-top: 20px;
-    }
+    #loading-spinner { display: none; margin-top: 20px; }
     .spinner {
       border: 8px solid #f3f3f3;
       border-top: 8px solid #3498db;
@@ -28,17 +23,12 @@
       100% { transform: rotate(360deg); }
     }
   </style>
-
-  <!-- Solana Web3.js -->
   <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
-
-  <!-- Solana SPL Token.js (for $SHUFF token transfers) -->
-  <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.3.5/lib/index.iife.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@latest/dist/browser/index.iife.min.js"></script>
 </head>
-
 <body>
 
-<h1>🏌️‍♂️ Solana Golf Game ($SHUFF)</h1>
+<h1>🏌️‍♂️ Solana Golf Game ($SHUFF Version)</h1>
 
 <button id="connect-wallet-btn">Connect Wallet</button>
 
@@ -51,7 +41,6 @@
 
 <div id="status"></div>
 
-<!-- Loading spinner -->
 <div id="loading-spinner">
   <div class="spinner"></div>
   <p>Processing transaction...</p>
@@ -68,8 +57,8 @@
 // Globals
 let walletAddress = null;
 const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
-const liquidityWallet = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump');
-const shuffMint = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump'); // your $SHUFF token mint
+const treasuryWallet = new solanaWeb3.PublicKey('649fCzukZDSWwmhjQSAEJCyW6LXN8TDj5ytFxVtFv4ry');
+const shuffMint = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump'); // SHUFF token mint
 
 async function connectWallet() {
   try {
@@ -84,51 +73,50 @@ async function connectWallet() {
   }
 }
 
-// Send $SHUFF token
 async function sendTransaction(amount) {
   const loadingSpinner = document.getElementById('loading-spinner');
   try {
-    loadingSpinner.style.display = 'block'; // Show spinner
+    loadingSpinner.style.display = 'block';
 
     const provider = window.solana;
-    const fromPubkey = provider.publicKey;
+    const fromWallet = provider.publicKey;
+    const fromTokenAccount = await splToken.getAssociatedTokenAddress(shuffMint, fromWallet);
+    const toTokenAccount = await splToken.getAssociatedTokenAddress(shuffMint, treasuryWallet);
 
-    // Get user's token account
-    const fromTokenAccounts = await connection.getTokenAccountsByOwner(fromPubkey, { mint: shuffMint });
-    if (fromTokenAccounts.value.length === 0) {
-      alert('No $SHUFF tokens found in your wallet.');
-      return;
-    }
-    const fromTokenAccountPubkey = fromTokenAccounts.value[0].pubkey;
-
-    // Get (or create) the recipient token account
-    let toTokenAccounts = await connection.getTokenAccountsByOwner(liquidityWallet, { mint: shuffMint });
-    let toTokenAccountPubkey;
-    if (toTokenAccounts.value.length > 0) {
-      toTokenAccountPubkey = toTokenAccounts.value[0].pubkey;
-    } else {
-      // Normally you should create Associated Token Account here
-      alert('Recipient does not have a $SHUFF account set up.');
-      return;
+    // Create destination token account if it doesn't exist
+    const toTokenAccountInfo = await connection.getAccountInfo(toTokenAccount);
+    const instructions = [];
+    if (!toTokenAccountInfo) {
+      instructions.push(
+        splToken.createAssociatedTokenAccountInstruction(
+          fromWallet,
+          toTokenAccount,
+          treasuryWallet,
+          shuffMint
+        )
+      );
     }
 
-    const tokenAmount = BigInt(amount * 1e9); // assuming $SHUFF has 9 decimals like SOL
+    // 25% of amount to send
+    const sendAmount = BigInt(Math.floor(amount * 0.25 * 1e9)); // SHUFF uses 9 decimals
 
-    const transferIx = splToken.createTransferInstruction(
-      fromTokenAccountPubkey,
-      toTokenAccountPubkey,
-      fromPubkey,
-      tokenAmount
+    instructions.push(
+      splToken.createTransferInstruction(
+        fromTokenAccount,
+        toTokenAccount,
+        fromWallet,
+        sendAmount
+      )
     );
 
     const latestBlockhash = await connection.getLatestBlockhash();
     const transaction = new solanaWeb3.Transaction({
       recentBlockhash: latestBlockhash.blockhash,
-      feePayer: fromPubkey,
-    }).add(transferIx);
+      feePayer: fromWallet,
+    }).add(...instructions);
 
-    const signed = await provider.signTransaction(transaction);
-    const signature = await connection.sendRawTransaction(signed.serialize());
+    const signedTx = await provider.signTransaction(transaction);
+    const signature = await connection.sendRawTransaction(signedTx.serialize());
     await connection.confirmTransaction(signature);
 
     document.getElementById('status').innerText = '🏌️‍♂️ Swing successful!';
@@ -138,7 +126,7 @@ async function sendTransaction(amount) {
     console.error(err);
     alert('Transaction failed!');
   } finally {
-    loadingSpinner.style.display = 'none'; // Always hide spinner
+    loadingSpinner.style.display = 'none';
   }
 }
 
@@ -146,8 +134,8 @@ function animateGolfBall() {
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
   let x = 50, y = 300;
-  let vx = 10;   // initial horizontal speed
-  let vy = -18;  // initial upward velocity
+  let vx = 10;
+  let vy = -18;
   const gravity = 0.6;
   const friction = 0.98;
   const ground = canvas.height - 10;
@@ -204,7 +192,7 @@ function animateGolfBall() {
 function updateLeaderboard(address, amount) {
   const leaderboard = document.getElementById('leaderboard-list');
   const entry = document.createElement('li');
-  entry.innerText = `${address.slice(0, 4)}... swung ${amount} SHUFF!`;
+  entry.innerText = `${address.slice(0, 4)}... swung ${amount} $SHUFF!`;
   leaderboard.appendChild(entry);
   document.getElementById('leaderboard').style.display = 'block';
 }
