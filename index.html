@@ -15,17 +15,15 @@
       box-sizing: border-box;
     }
 
-    /* Add the background image to the whole body */
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
       background: url('images/background.jpg') no-repeat center center fixed;
-      background-size: cover; /* Makes the background cover the entire page */
+      background-size: cover;
       color: #fff;
       line-height: 1.6;
     }
 
-    /* Add overlay for better text readability */
     body::after {
       content: "";
       position: relative;
@@ -33,8 +31,8 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.2); 
-      z-index: -1; /* Put the overlay behind the content */
+      background: rgba(0, 0, 0, 0.2);
+      z-index: -1;
     }
 
     header {
@@ -43,7 +41,13 @@
       justify-content: space-between;
       align-items: center;
       padding: 1rem 2rem;
-      background-color: rgba(28, 28, 28, 0.8); /* Semi-transparent dark background */
+      background-color: rgba(28, 28, 28, 0.8);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .logo h1 {
@@ -103,16 +107,16 @@
     footer {
       text-align: center;
       padding: 1rem;
-      background-color: rgba(28, 28, 28, 0.8); /* Semi-transparent dark background */
+      background-color: rgba(28, 28, 28, 0.8);
     }
 
     footer a {
-      color: #d3d3d3; /* Light grey color for hyperlinks */
+      color: #d3d3d3;
       text-decoration: none;
     }
 
     footer a:hover {
-      color: #fff; /* Change to white on hover */
+      color: #fff;
     }
 
     code {
@@ -180,6 +184,7 @@
 <body>
   <header>
     <div class="logo">
+      <img src="images/shuff-logo.png" alt="Shuffler Logo" style="height: 40px; width: auto;" />
       <h1>The Shuffler Coin</h1>
     </div>
     <nav>
@@ -230,19 +235,16 @@
         <p>It’s a journey, it’s a mission, and it’s going to be one heck of a ride...</p>
         <p>Join us as we shuffle our way to a brighter, fun-filled future!</p>
       </section>      
-      
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="chart.js" defer></script>
 
-
-      <section id="tokenomics">
-        <h2>Tokenomics</h2>
-        <div class="chart-container" style="width: 400px; height: 400px;">
-          <canvas id="tokenomicsChart"></canvas>
-        </div>
-      </section>
-      
+    <section id="tokenomics">
+      <h2>Tokenomics</h2>
+      <div class="chart-container" style="width: 400px; height: 400px;">
+        <canvas id="tokenomicsChart"></canvas>
+      </div>
+    </section>
 
     <section id="game">
       <h2>Play the Game!</h2>
@@ -269,7 +271,6 @@
     <p>Made with love by the Shuffler team. Connect with us on <a href="#">Discord</a> for updates!</p>
   </footer>
 
-  <!-- Phantom Wallet connection script -->
   <script>
     const walletBtn = document.getElementById('walletBtn');
 
@@ -295,11 +296,10 @@
           walletBtn.textContent = 'Wallet Connected';
           walletBtn.style.backgroundColor = '#1abc9c';
         } catch (err) {
-          // Silent fail — user hasn't connected yet
+          // Silent fail
         }
       }
     });
   </script>
 </body>
 </html>
-z
