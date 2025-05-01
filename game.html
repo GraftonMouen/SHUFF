@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Golf Game</title>
+  <title>Solana Golf Game ($SHUFF)</title>
   <style>
     body { text-align: center; background: #e8f8e8; font-family: Arial, sans-serif; }
     #game-canvas { border: 1px solid #000; margin-top: 20px; }
@@ -28,8 +28,7 @@
 </head>
 <body>
 
-<h1>🏌️‍♂️ Solana Golf Game ($SHUFF Version)</h1>
-
+<h1>🏌️ Solana Golf Game ($SHUFF)</h1>
 <button id="connect-wallet-btn">Connect Wallet</button>
 
 <div id="wallet-info">
@@ -54,39 +53,45 @@
 </div>
 
 <script>
-// Globals
-let walletAddress = null;
 const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
-const treasuryWallet = new solanaWeb3.PublicKey('649fCzukZDSWwmhjQSAEJCyW6LXN8TDj5ytFxVtFv4ry');
-const shuffMint = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump'); // SHUFF token mint
+const treasuryWallet = new solanaWeb3.PublicKey('649fCzukZDSWwmhjQSAEJCyW6LXN8TDj5ytFxVtFv4ry'); // CHANGE IF NEEDED
+const shuffMint = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump'); // $SHUFF token mint
+
+let walletAddress = null;
 
 async function connectWallet() {
   try {
-    const resp = await window.solana.connect();
+    const provider = window.solana;
+    if (!provider || !provider.isPhantom) {
+      alert("Please install Phantom Wallet.");
+      return;
+    }
+    const resp = await provider.connect();
     walletAddress = resp.publicKey.toString();
     document.getElementById('wallet-address').innerText = walletAddress;
     document.getElementById('wallet-info').style.display = 'block';
     document.getElementById('swing-btn').disabled = false;
   } catch (err) {
-    console.error(err);
+    console.error('Wallet connection failed:', err);
     alert('Wallet connection failed!');
   }
 }
 
 async function sendTransaction(amount) {
   const loadingSpinner = document.getElementById('loading-spinner');
-  try {
-    loadingSpinner.style.display = 'block';
+  loadingSpinner.style.display = 'block';
 
+  try {
     const provider = window.solana;
     const fromWallet = provider.publicKey;
+
     const fromTokenAccount = await splToken.getAssociatedTokenAddress(shuffMint, fromWallet);
     const toTokenAccount = await splToken.getAssociatedTokenAddress(shuffMint, treasuryWallet);
 
-    // Create destination token account if it doesn't exist
-    const toTokenAccountInfo = await connection.getAccountInfo(toTokenAccount);
     const instructions = [];
-    if (!toTokenAccountInfo) {
+    const toAccountInfo = await connection.getAccountInfo(toTokenAccount);
+
+    if (!toAccountInfo) {
       instructions.push(
         splToken.createAssociatedTokenAccountInstruction(
           fromWallet,
@@ -97,7 +102,6 @@ async function sendTransaction(amount) {
       );
     }
 
-    // 25% of amount to send
     const sendAmount = BigInt(Math.floor(amount * 0.25 * 1e9)); // SHUFF uses 9 decimals
 
     instructions.push(
@@ -109,21 +113,21 @@ async function sendTransaction(amount) {
       )
     );
 
-    const latestBlockhash = await connection.getLatestBlockhash();
+    const recentBlockhash = await connection.getLatestBlockhash();
     const transaction = new solanaWeb3.Transaction({
-      recentBlockhash: latestBlockhash.blockhash,
-      feePayer: fromWallet,
+      recentBlockhash: recentBlockhash.blockhash,
+      feePayer: fromWallet
     }).add(...instructions);
 
-    const signedTx = await provider.signTransaction(transaction);
-    const signature = await connection.sendRawTransaction(signedTx.serialize());
+    const signed = await provider.signTransaction(transaction);
+    const signature = await connection.sendRawTransaction(signed.serialize());
     await connection.confirmTransaction(signature);
 
-    document.getElementById('status').innerText = '🏌️‍♂️ Swing successful!';
+    document.getElementById('status').innerText = '🏌️ Swing successful!';
     animateGolfBall();
     updateLeaderboard(walletAddress, amount);
   } catch (err) {
-    console.error(err);
+    console.error('Transaction failed:', err);
     alert('Transaction failed!');
   } finally {
     loadingSpinner.style.display = 'none';
@@ -134,8 +138,7 @@ function animateGolfBall() {
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
   let x = 50, y = 300;
-  let vx = 10;
-  let vy = -18;
+  let vx = 10, vy = -18;
   const gravity = 0.6;
   const friction = 0.98;
   const ground = canvas.height - 10;
@@ -143,7 +146,6 @@ function animateGolfBall() {
 
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     ctx.beginPath();
     ctx.arc(x, y, 10, 0, Math.PI * 2);
     ctx.fillStyle = 'white';
@@ -163,7 +165,6 @@ function animateGolfBall() {
       x += vx;
       y += vy;
       vy += gravity;
-
       if (y >= ground) {
         y = ground;
         vy = 0;
@@ -172,9 +173,7 @@ function animateGolfBall() {
     } else {
       x += vx;
       vx *= friction;
-      if (Math.abs(vx) < 0.5) {
-        vx = 0;
-      }
+      if (Math.abs(vx) < 0.5) vx = 0;
     }
   }
 
@@ -198,7 +197,6 @@ function updateLeaderboard(address, amount) {
 }
 
 document.getElementById('connect-wallet-btn').addEventListener('click', connectWallet);
-
 document.getElementById('swing-btn').addEventListener('click', async () => {
   const amount = parseFloat(document.getElementById('swing-amount').value);
   if (!amount || amount <= 0) {
