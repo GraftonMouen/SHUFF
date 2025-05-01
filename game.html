@@ -3,209 +3,512 @@
 <head>
   <meta charset="UTF-8">
   <title>Solana Golf Game ($SHUFF)</title>
+  <script src="https://unpkg.com/@solana/web3.js@1.70.1/lib/index.iife.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.3.8/dist/browser/index.iife.min.js"></script>
   <style>
-    body { text-align: center; background: #e8f8e8; font-family: Arial, sans-serif; }
-    #game-canvas { border: 1px solid #000; margin-top: 20px; }
-    #wallet-info, #leaderboard { display: none; margin-top: 20px; }
-    button, input { margin: 10px; padding: 10px; font-size: 16px; }
-    #loading-spinner { display: none; margin-top: 20px; }
+    body { 
+      font-family: 'Arial', sans-serif;
+      background: #f0f8ff;
+      color: #333;
+      text-align: center;
+      padding: 20px;
+    }
+    
+    .game-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+    }
+    
+    #game-canvas {
+      background: #2ecc71;
+      border-radius: 8px;
+      margin: 20px auto;
+      display: block;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    #wallet-info {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      text-align: left;
+    }
+    
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px 5px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+    
+    button:hover {
+      background: #2980b9;
+    }
+    
+    button:disabled {
+      background: #95a5a6;
+      cursor: not-allowed;
+    }
+    
+    input {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 16px;
+      width: 200px;
+    }
+    
+    #status {
+      margin: 15px 0;
+      min-height: 20px;
+      color: #e74c3c;
+      font-weight: bold;
+    }
+    
+    #loading-spinner {
+      margin: 20px 0;
+    }
+    
     .spinner {
-      border: 8px solid #f3f3f3;
-      border-top: 8px solid #3498db;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #3498db;
       border-radius: 50%;
-      width: 50px;
-      height: 50px;
+      width: 40px;
+      height: 40px;
       animation: spin 1s linear infinite;
       margin: 0 auto;
     }
+    
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    
+    #leaderboard {
+      background: #ecf0f1;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    
+    #leaderboard-list {
+      list-style: none;
+      padding: 0;
+      text-align: left;
+    }
+    
+    #leaderboard-list li {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    #leaderboard-list li:last-child {
+      border-bottom: none;
+    }
   </style>
-  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@latest/dist/browser/index.iife.min.js"></script>
 </head>
 <body>
+  <div class="game-container">
+    <h1>🏌️ Solana Golf Game ($SHUFF)</h1>
+    <button id="connect-wallet-btn">Connect Phantom Wallet</button>
 
-<h1>🏌️ Solana Golf Game ($SHUFF)</h1>
-<button id="connect-wallet-btn">Connect Wallet</button>
+    <div id="wallet-info" style="display:none;">
+      <p>Wallet Address: <span id="wallet-address"></span></p>
+      <p>Balance: <span id="wallet-balance">0</span> SHUFF</p>
+    </div>
 
-<div id="wallet-info">
-  <p>Wallet Address: <span id="wallet-address"></span></p>
-</div>
+    <div>
+      <input type="number" id="swing-amount" placeholder="Enter SHUFF amount" min="0.1" step="0.1">
+      <button id="swing-btn" disabled>Swing!</button>
+    </div>
 
-<input type="number" id="swing-amount" placeholder="Enter amount ($SHUFF)" min="0.001" step="0.001">
-<button id="swing-btn" disabled>Swing!</button>
+    <div id="status"></div>
 
-<div id="status"></div>
+    <div id="loading-spinner" style="display:none;">
+      <div class="spinner"></div>
+      <p>Processing transaction...</p>
+    </div>
 
-<div id="loading-spinner">
-  <div class="spinner"></div>
-  <p>Processing transaction...</p>
-</div>
+    <canvas id="game-canvas" width="800" height="400"></canvas>
 
-<canvas id="game-canvas" width="800" height="400"></canvas>
+    <div id="leaderboard">
+      <h2>🏆 Leaderboard</h2>
+      <ul id="leaderboard-list"></ul>
+    </div>
+  </div>
 
-<div id="leaderboard">
-  <h2>🏆 Leaderboard</h2>
-  <ul id="leaderboard-list"></ul>
-</div>
+  <script>
+    // Solana Configuration
+    const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
+    const treasuryWallet = new solanaWeb3.PublicKey('649fCzukZDSWwmhjQSAEJCyW6LXN8TDj5ytFxVtFv4ry');
+    const shuffMint = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump');
+    
+    let walletAddress = null;
+    let walletPublicKey = null;
 
-<script>
-const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
-const treasuryWallet = new solanaWeb3.PublicKey('649fCzukZDSWwmhjQSAEJCyW6LXN8TDj5ytFxVtFv4ry'); // CHANGE IF NEEDED
-const shuffMint = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump'); // $SHUFF token mint
+    // DOM Elements
+    const connectBtn = document.getElementById('connect-wallet-btn');
+    const walletAddressSpan = document.getElementById('wallet-address');
+    const walletBalanceSpan = document.getElementById('wallet-balance');
+    const swingAmountInput = document.getElementById('swing-amount');
+    const swingBtn = document.getElementById('swing-btn');
+    const statusDiv = document.getElementById('status');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    const leaderboardList = document.getElementById('leaderboard-list');
 
-let walletAddress = null;
-
-async function connectWallet() {
-  try {
-    const provider = window.solana;
-    if (!provider || !provider.isPhantom) {
-      alert("Please install Phantom Wallet.");
-      return;
-    }
-    const resp = await provider.connect();
-    walletAddress = resp.publicKey.toString();
-    document.getElementById('wallet-address').innerText = walletAddress;
-    document.getElementById('wallet-info').style.display = 'block';
-    document.getElementById('swing-btn').disabled = false;
-  } catch (err) {
-    console.error('Wallet connection failed:', err);
-    alert('Wallet connection failed!');
-  }
-}
-
-async function sendTransaction(amount) {
-  const loadingSpinner = document.getElementById('loading-spinner');
-  loadingSpinner.style.display = 'block';
-
-  try {
-    const provider = window.solana;
-    const fromWallet = provider.publicKey;
-
-    const fromTokenAccount = await splToken.getAssociatedTokenAddress(shuffMint, fromWallet);
-    const toTokenAccount = await splToken.getAssociatedTokenAddress(shuffMint, treasuryWallet);
-
-    const instructions = [];
-    const toAccountInfo = await connection.getAccountInfo(toTokenAccount);
-
-    if (!toAccountInfo) {
-      instructions.push(
-        splToken.createAssociatedTokenAccountInstruction(
-          fromWallet,
-          toTokenAccount,
-          treasuryWallet,
-          shuffMint
-        )
-      );
-    }
-
-    const sendAmount = BigInt(Math.floor(amount * 0.25 * 1e9)); // SHUFF uses 9 decimals
-
-    instructions.push(
-      splToken.createTransferInstruction(
-        fromTokenAccount,
-        toTokenAccount,
-        fromWallet,
-        sendAmount
-      )
-    );
-
-    const recentBlockhash = await connection.getLatestBlockhash();
-    const transaction = new solanaWeb3.Transaction({
-      recentBlockhash: recentBlockhash.blockhash,
-      feePayer: fromWallet
-    }).add(...instructions);
-
-    const signed = await provider.signTransaction(transaction);
-    const signature = await connection.sendRawTransaction(signed.serialize());
-    await connection.confirmTransaction(signature);
-
-    document.getElementById('status').innerText = '🏌️ Swing successful!';
-    animateGolfBall();
-    updateLeaderboard(walletAddress, amount);
-  } catch (err) {
-    console.error('Transaction failed:', err);
-    alert('Transaction failed!');
-  } finally {
-    loadingSpinner.style.display = 'none';
-  }
-}
-
-function animateGolfBall() {
-  const canvas = document.getElementById('game-canvas');
-  const ctx = canvas.getContext('2d');
-  let x = 50, y = 300;
-  let vx = 10, vy = -18;
-  const gravity = 0.6;
-  const friction = 0.98;
-  const ground = canvas.height - 10;
-  let rolling = false;
-
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.beginPath();
-    ctx.arc(x, y, 10, 0, Math.PI * 2);
-    ctx.fillStyle = 'white';
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(0, ground);
-    ctx.lineTo(canvas.width, ground);
-    ctx.strokeStyle = 'green';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-
-  function update() {
-    if (!rolling) {
-      x += vx;
-      y += vy;
-      vy += gravity;
-      if (y >= ground) {
-        y = ground;
-        vy = 0;
-        rolling = true;
+    // Connect Wallet
+    async function connectWallet() {
+      try {
+        connectBtn.disabled = true;
+        statusDiv.textContent = "Connecting to wallet...";
+        
+        if (!window.solana || !window.solana.isPhantom) {
+          throw new Error("Phantom Wallet not installed!");
+        }
+        
+        const response = await window.solana.connect();
+        walletPublicKey = response.publicKey;
+        walletAddress = walletPublicKey.toString();
+        
+        walletAddressSpan.textContent = `${walletAddress.slice(0,4)}...${walletAddress.slice(-4)}`;
+        document.getElementById('wallet-info').style.display = 'block';
+        swingBtn.disabled = false;
+        connectBtn.textContent = "Wallet Connected";
+        
+        // Get balance
+        const balance = await getShuffBalance(walletPublicKey);
+        walletBalanceSpan.textContent = balance;
+        
+        statusDiv.textContent = "Wallet connected successfully!";
+        statusDiv.style.color = "#2ecc71";
+        
+        // Load leaderboard
+        loadLeaderboard();
+      } catch (err) {
+        statusDiv.textContent = `Error: ${err.message}`;
+        statusDiv.style.color = "#e74c3c";
+        connectBtn.disabled = false;
       }
-    } else {
-      x += vx;
-      vx *= friction;
-      if (Math.abs(vx) < 0.5) vx = 0;
     }
-  }
 
-  function loop() {
-    update();
-    draw();
-    if (x < canvas.width && (vx !== 0 || !rolling)) {
-      requestAnimationFrame(loop);
+    // Get SHUFF Token Balance
+    async function getShuffBalance(publicKey) {
+      try {
+        const tokenAccount = await splToken.getAssociatedTokenAddress(
+          shuffMint,
+          publicKey
+        );
+        
+        const accountInfo = await connection.getAccountInfo(tokenAccount);
+        if (!accountInfo) return 0;
+        
+        const tokenAmount = splToken.getAccount(accountInfo).amount;
+        return (tokenAmount / 1000000000).toFixed(2);
+      } catch {
+        return 0;
+      }
     }
-  }
 
-  loop();
-}
+    // Send Transaction
+    async function sendTransaction(amount) {
+      loadingSpinner.style.display = 'block';
+      statusDiv.textContent = "Preparing transaction...";
+      
+      try {
+        // Validate amount
+        if (amount <= 0) throw new Error("Amount must be positive");
+        
+        // Get token accounts
+        const fromTokenAccount = await splToken.getAssociatedTokenAddress(
+          shuffMint,
+          walletPublicKey
+        );
+        
+        const toTokenAccount = await splToken.getAssociatedTokenAddress(
+          shuffMint,
+          treasuryWallet
+        );
+        
+        // Create instructions
+        const instructions = [];
+        
+        // Create associated token account if needed
+        const toAccountInfo = await connection.getAccountInfo(toTokenAccount);
+        if (!toAccountInfo) {
+          instructions.push(
+            splToken.createAssociatedTokenAccountInstruction(
+              walletPublicKey,
+              toTokenAccount,
+              treasuryWallet,
+              shuffMint
+            )
+          );
+        }
+        
+        // Add transfer instruction
+        const sendAmount = BigInt(Math.floor(amount * 1000000000)); // SHUFF has 9 decimals
+        
+        instructions.push(
+          splToken.createTransferInstruction(
+            fromTokenAccount,
+            toTokenAccount,
+            walletPublicKey,
+            sendAmount
+          )
+        );
+        
+        // Send transaction
+        const recentBlockhash = await connection.getLatestBlockhash();
+        const transaction = new solanaWeb3.Transaction({
+          recentBlockhash: recentBlockhash.blockhash,
+          feePayer: walletPublicKey
+        }).add(...instructions);
+        
+        const signed = await window.solana.signTransaction(transaction);
+        const signature = await connection.sendRawTransaction(signed.serialize());
+        
+        statusDiv.textContent = "Transaction sent, confirming...";
+        const confirmation = await connection.confirmTransaction(signature);
+        
+        if (confirmation.value.err) {
+          throw new Error("Transaction failed");
+        }
+        
+        statusDiv.textContent = "🎉 Transaction successful! Swing away!";
+        statusDiv.style.color = "#2ecc71";
+        
+        // Update balance
+        const newBalance = await getShuffBalance(walletPublicKey);
+        walletBalanceSpan.textContent = newBalance;
+        
+        // Animate golf swing
+        animateGolfBall();
+        
+        // Update leaderboard
+        updateLeaderboard(walletAddress, amount);
+      } catch (err) {
+        statusDiv.textContent = `Transaction failed: ${err.message}`;
+        statusDiv.style.color = "#e74c3c";
+        console.error("Transaction error:", err);
+      } finally {
+        loadingSpinner.style.display = 'none';
+      }
+    }
 
-function updateLeaderboard(address, amount) {
-  const leaderboard = document.getElementById('leaderboard-list');
-  const entry = document.createElement('li');
-  entry.innerText = `${address.slice(0, 4)}... swung ${amount} $SHUFF!`;
-  leaderboard.appendChild(entry);
-  document.getElementById('leaderboard').style.display = 'block';
-}
+    // Golf Game Animation
+    function animateGolfBall() {
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Course elements
+      const obstacles = [
+        {x: 300, y: 250, width: 30, height: 30, type: 'sand'},
+        {x: 500, y: 200, width: 40, height: 40, type: 'water'}
+      ];
+      
+      // Ball properties
+      const ball = {
+        x: 50,
+        y: 350,
+        radius: 10,
+        vx: swingAmountInput.value * 0.5,
+        vy: -swingAmountInput.value * 0.8,
+        inHole: false
+      };
+      
+      // Hole properties
+      const hole = {
+        x: 700,
+        y: 350,
+        radius: 15
+      };
+      
+      // Draw function
+      function draw() {
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw green
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(0, 350, canvas.width, 50);
+        
+        // Draw obstacles
+        obstacles.forEach(obs => {
+          ctx.fillStyle = obs.type === 'sand' ? '#f39c12' : '#3498db';
+          ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+        });
+        
+        // Draw hole
+        ctx.beginPath();
+        ctx.arc(hole.x, hole.y, hole.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        
+        // Draw ball if not in hole
+        if (!ball.inHole) {
+          ctx.beginPath();
+          ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+          ctx.fillStyle = 'white';
+          ctx.fill();
+          ctx.strokeStyle = '#333';
+          ctx.stroke();
+        }
+      }
+      
+      // Update function
+      function update() {
+        if (ball.inHole) return;
+        
+        // Apply physics
+        ball.x += ball.vx;
+        ball.y += ball.vy;
+        ball.vy += 0.2; // Gravity
+        
+        // Ground collision
+        if (ball.y + ball.radius > 350) {
+          ball.y = 350 - ball.radius;
+          ball.vy *= -0.6; // Bounce
+          ball.vx *= 0.9; // Friction
+        }
+        
+        // Obstacle collisions
+        obstacles.forEach(obs => {
+          if (ball.x + ball.radius > obs.x && 
+              ball.x - ball.radius < obs.x + obs.width &&
+              ball.y + ball.radius > obs.y && 
+              ball.y - ball.radius < obs.y + obs.height) {
+            
+            if (obs.type === 'water') {
+              // Reset ball if in water
+              ball.x = 50;
+              ball.y = 350;
+              ball.vx = ball.vy = 0;
+              statusDiv.textContent = "💦 Ball in water! Try again.";
+            } else {
+              // Slow down in sand
+              ball.vx *= 0.5;
+              ball.vy *= 0.5;
+            }
+          }
+        });
+        
+        // Hole detection
+        const distToHole = Math.sqrt(
+          Math.pow(ball.x - hole.x, 2) + 
+          Math.pow(ball.y - hole.y, 2)
+        );
+        
+        if (distToHole < hole.radius + ball.radius) {
+          ball.inHole = true;
+          statusDiv.textContent = "🏆 Hole in one! You win!";
+          updateLeaderboard(walletAddress, "WIN");
+        }
+        
+        // Stop when slow enough
+        if (Math.abs(ball.vx) < 0.1 && Math.abs(ball.vy) < 0.1) {
+          ball.vx = ball.vy = 0;
+        }
+      }
+      
+      // Game loop
+      function gameLoop() {
+        update();
+        draw();
+        
+        if (!ball.inHole && (ball.vx !== 0 || ball.vy !== 0)) {
+          requestAnimationFrame(gameLoop);
+        }
+      }
+      
+      // Start the game
+      gameLoop();
+    }
 
-document.getElementById('connect-wallet-btn').addEventListener('click', connectWallet);
-document.getElementById('swing-btn').addEventListener('click', async () => {
-  const amount = parseFloat(document.getElementById('swing-amount').value);
-  if (!amount || amount <= 0) {
-    alert('Enter a valid amount!');
-    return;
-  }
-  await sendTransaction(amount);
-});
-</script>
+    // Leaderboard Functions
+    function loadLeaderboard() {
+      const leaderboard = JSON.parse(localStorage.getItem('shuffLeaderboard') || '[]');
+      displayLeaderboard(leaderboard);
+    }
+    
+    function updateLeaderboard(address, amount) {
+      const leaderboard = JSON.parse(localStorage.getItem('shuffLeaderboard') || '[]');
+      leaderboard.push({
+        address: address,
+        amount: amount,
+        date: new Date().toISOString()
+      });
+      
+      localStorage.setItem('shuffLeaderboard', JSON.stringify(leaderboard));
+      displayLeaderboard(leaderboard);
+    }
+    
+    function displayLeaderboard(entries) {
+      // Sort by date (newest first)
+      entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      // Get top 10
+      const topEntries = entries.slice(0, 10);
+      
+      // Display
+      leaderboardList.innerHTML = topEntries.map(entry => `
+        <li>
+          <strong>${entry.address.slice(0,4)}...${entry.address.slice(-4)}</strong>
+          - ${entry.amount} SHUFF
+          <small>${new Date(entry.date).toLocaleString()}</small>
+        </li>
+      `).join('');
+    }
 
+    // Event Listeners
+    connectBtn.addEventListener('click', connectWallet);
+    swingBtn.addEventListener('click', async () => {
+      const amount = parseFloat(swingAmountInput.value);
+      if (!amount || amount <= 0) {
+        statusDiv.textContent = "Please enter a valid amount";
+        statusDiv.style.color = "#e74c3c";
+        return;
+      }
+      
+      await sendTransaction(amount);
+    });
+    
+    // Auto-connect if returning user
+    window.addEventListener('load', async () => {
+      if (window.solana && window.solana.isPhantom) {
+        try {
+          const response = await window.solana.connect({ onlyIfTrusted: true });
+          walletPublicKey = response.publicKey;
+          walletAddress = walletPublicKey.toString();
+          
+          walletAddressSpan.textContent = `${walletAddress.slice(0,4)}...`;
+          document.getElementById('wallet-info').style.display = 'block';
+          swingBtn.disabled = false;
+          connectBtn.textContent = "Wallet Connected";
+          
+          const balance = await getShuffBalance(walletPublicKey);
+          walletBalanceSpan.textContent = balance;
+          
+          loadLeaderboard();
+        } catch (err) {
+          console.log("Auto-connect skipped:", err);
+        }
+      }
+    });
+  </script>
 </body>
 </html>
