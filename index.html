@@ -1,358 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Shuffler Coin</title>
-  <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
-  <link rel="manifest" href="images/site.webmanifest">
-  <link rel="stylesheet" href="css/styles.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- [Keep all your existing link tags] -->
+  <script src="https://unpkg.com/@solana/web3.js@1.70.1/lib/index.iife.min.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: url('images/background.jpg') no-repeat center center fixed;
-      background-size: cover;
-      color: #fff;
-      line-height: 1.6;
-    }
-
-    body::after {
-      content: "";
-      position: relative;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.2);
-      z-index: -1;
-    }
-
-    header {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem 2rem;
-      background-color: rgba(28, 28, 28, 0.8);
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .logo h1 {
-      font-size: 1.5rem;
-      margin: 0;
-    }
-
-    nav ul {
-      list-style: none;
-      display: flex;
-      gap: 1rem;
-      padding: 0;
-      margin: 0;
-      flex-wrap: wrap;
-    }
-
-    nav ul li a {
-      color: #fff;
-      text-decoration: none;
-      font-size: 1rem;
-    }
-
-    #walletBtn {
-      padding: 0.5rem 1rem;
-      background: #2ecc71;
-      border: none;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 0.5rem;
-    }
-
-    main {
-      padding: 1rem;
-    }
-
-    section {
-      margin-bottom: 3rem;
-      opacity: 0;
-      transform: translateY(50px);
-      transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-    }
-
-    section.reveal {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .chart-container {
-      max-width: 500px;
-      margin: 2rem auto;
-      padding: 1rem;
-    }
-
-    .btn {
-      background: #3498db;
-      color: white;
-      padding: 0.75rem 1.5rem;
-      text-decoration: none;
-      border-radius: 5px;
+    /* [Keep all your existing styles] */
+    .spinner {
+      border: 4px solid rgba(0,0,0,0.1);
+      border-radius: 50%;
+      border-top: 4px solid #3498db;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
       display: inline-block;
-      margin-top: 1rem;
+      vertical-align: middle;
+      margin-left: 10px;
     }
-
-    footer {
-      text-align: center;
-      padding: 1rem;
-      background-color: rgba(28, 28, 28, 0.8);
-    }
-
-    footer a {
-      color: #d3d3d3;
-      text-decoration: none;
-    }
-
-    footer a:hover {
-      color: #fff;
-    }
-
-    code {
-      background-color: #222;
-      padding: 0.2rem 0.4rem;
-      border-radius: 3px;
-      font-size: 0.95rem;
-    }
-
-    .hero {
-      padding: 4rem 2rem;
-      text-align: center;
-      background: rgba(0, 0, 0, 0.6);
-      margin-bottom: 3rem;
-      opacity: 1;
-      transform: none;
-    }
-
-    .hero h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .hero p {
-      font-size: 1.2rem;
-      margin-bottom: 2rem;
-    }
-
-    .hero .btn {
-      background: #2ecc71;
-      color: white;
-      padding: 0.75rem 1.5rem;
-      text-decoration: none;
-      border-radius: 5px;
-      font-size: 1.2rem;
-    }
-
-    @media (max-width: 768px) {
-      header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      nav ul {
-        flex-direction: column;
-        width: 100%;
-        gap: 0.5rem;
-        margin-top: 1rem;
-      }
-
-      nav ul li a {
-        font-size: 1rem;
-      }
-
-      .chart-container {
-        width: 100%;
-        padding: 0;
-      }
-
-      .logo h1 {
-        font-size: 1.25rem;
-      }
-
-      #walletBtn {
-        width: 100%;
-      }
-
-      .btn {
-        width: 100%;
-        text-align: center;
-      }
-    }
-
-    @media (max-width: 480px) {
-      body {
-        font-size: 0.95rem;
-      }
-
-      .logo h1 {
-        font-size: 1.1rem;
-      }
-
-      nav ul li a {
-        font-size: 0.95rem;
-      }
-
-      #walletBtn {
-        font-size: 1rem;
-      }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="logo">
-      <img src="images/shuff-logo.png" alt="Shuffler Logo" style="height: 40px; width: auto;" />
-      <h1>The Shuffler Coin</h1>
-    </div>
-    <nav>
-      <ul>
-        <li><a href="#about">About</a></li>
-        <li><a href="#tokenomics">Tokenomics</a></li>
-        <li><a href="#game">Game</a></li>
-        <li><a href="#how-to-buy">How to Buy</a></li>
-        <li><a href="#contact">Contact</a></li>
-      </ul>
-    </nav>
-    <button id="walletBtn">Connect Phantom Wallet</button>
-  </header>
-
-  <main>
-    <section class="hero">
-      <h1>Welcome to The Shuffler Coin</h1>
-      <p>Faith, Fun, and a Little Bit of Golf Magic ⛳✨</p>
-      <a href="#about" class="btn">Learn More</a>
-    </section>
-
-    <section id="about">
-      <h2>About The Shuffler Coin</h2>
-      <p>Welcome to the wild ride that is <strong>$SHUFF</strong>—the meme-based token that's not just about the love of golf, but also about faith, community, and a whole lot of fun. This project isn't just about numbers; it's about <em>believing</em> in the future, one golf swing at a time.</p>
-
-      <h3>Our Long-Term Project Plan (Warning: Highly Faith-Based and Fan-Driven)</h3>
-      <p>Here's the plan—grab your golf clubs, your faith, and your sense of humor because we're in this for the long haul...</p>
-
-      <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #fce2b3; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-        <h4>Year 1: Build the Faithful Community</h4>
-        <p>We'll start by gathering all the true believers in $SHUFF. Social media, word of mouth, maybe even a golf cart parade—this community will be more welcoming than a golf pro offering free lessons.</p>
-      </div>
-
-      <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #d4f3d5; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-        <h4>Year 2: The Shuffler Tournament of Faith</h4>
-        <p>It’s time to put our money where our mouth is (but in a fun, non-stressful way). We’ll host a golf tournament—bring your putters, your faith, and your $SHUFF tokens. Win or lose, you’re going home with a smile and maybe a few new tokens in your wallet.</p>
-      </div>
-
-      <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #f7b8d9; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-        <h4>Year 3: Shuffler Golf Course (Possibly in Heaven)</h4>
-        <p>By year 3, we plan to have our very own Shuffler Golf Course. It’ll be a place where community members can meet, play, and worship the almighty $SHUFF token. We’ll probably get a few holes-in-one too (hopefully).</p>
-      </div>
-
-      <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #d3e3fc; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-        <h4>Year 5: The Shuffler Crypto Church</h4>
-        <p>It’s not just a coin, it’s a lifestyle. In year 5, we’re going to build a “Shuffler Crypto Church.” You don’t need to believe in traditional religion, but you do need to believe in $SHUFF. Get ready for spiritual enlightenment... with a golf club in hand.</p>
-      </div>
-
-      <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #f6f7b2; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-        <h4>Year 10: Shuffler’s Ascension to Crypto Godhood</h4>
-        <p>After 10 years of spreading the gospel of $SHUFF, we’ll have ascended to the highest levels of the crypto world. We’ll be bigger than a golf ball on a driver’s tee (metaphorically speaking).</p>
-      </div>
-
-      <p>It’s a journey, it’s a mission, and it’s going to be one heck of a ride...</p>
-      <p>Join us as we shuffle our way to a brighter, fun-filled future!</p>
-    </section>
-
-    <section id="tokenomics">
-      <h2>Tokenomics</h2>
-      <div class="chart-container" style="width: 400px; height: 400px;">
-        <canvas id="tokenomicsChart"></canvas>
-      </div>
-    </section>
-
-    <section id="game">
-      <h2>Play the Game!</h2>
-      <p>Join the Shuffler mini-golf fun. Test your swing!</p>
-      <a href="game.html" class="btn">Play Now</a>
-    </section>
-
-    <section id="how-to-buy">
-      <h2>How to Buy</h2>
-      <ol>
-        <li>Download the Phantom Wallet.</li>
-        <li>Go to Pump.fun and search: <strong>Scottie Shuffler Coin</strong></li>
-        <li>Contract Address: <code>GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump</code></li>
-      </ol>
-    </section>
-
-    <section id="contact">
-      <h2>Contact</h2>
-      <p>Follow us on <a href="https://x.com/ScottieShuffles">X</a> and <a href="https://www.instagram.com/scottieshufflers/">Instagram</a>.</p>
-    </section>
-  </main>
-
-  <footer>
-    <p>Made with love by the Shuffler team. Connect with us on <a href="#">Discord</a> for updates!</p>
-  </footer>
+  <!-- [Keep all your existing HTML structure] -->
 
   <script>
-    const walletBtn = document.getElementById('walletBtn');
+    // Enhanced Wallet Connection
+    document.getElementById('walletBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('walletBtn');
+      const statusDiv = document.createElement('div');
+      statusDiv.id = 'walletStatus';
+      btn.parentNode.appendChild(statusDiv);
 
-    walletBtn.addEventListener('click', async () => {
       try {
-        if (window.solana && window.solana.isPhantom) {
-          const response = await window.solana.connect();
-          console.log('Connected with public key:', response.publicKey.toString());
-          walletBtn.textContent = 'Wallet Connected';
-          walletBtn.style.backgroundColor = '#1abc9c';
-        } else {
-          alert('Phantom Wallet not found! Please install it from https://phantom.app');
-        }
+        btn.disabled = true;
+        statusDiv.innerHTML = '<span class="spinner"></span> Connecting...';
+        
+        if (!window.solana) throw new Error("Phantom Wallet not installed!");
+        
+        const response = await window.solana.connect();
+        const publicKey = response.publicKey.toString();
+        
+        btn.textContent = `Connected: ${publicKey.slice(0,4)}...${publicKey.slice(-4)}`;
+        btn.style.backgroundColor = '#2ecc71';
+        statusDiv.innerHTML = '✅ Ready to play!';
+        
+        // Store wallet state
+        localStorage.setItem('shuffWallet', publicKey);
       } catch (err) {
-        console.error('Wallet connection failed:', err);
+        statusDiv.innerHTML = `❌ Error: ${err.message}`;
+        btn.disabled = false;
       }
     });
 
+    // Auto-reconnect
     window.addEventListener('load', async () => {
-      if (window.solana && window.solana.isPhantom) {
+      if (window.solana && localStorage.getItem('shuffWallet')) {
         try {
-          const resp = await window.solana.connect({ onlyIfTrusted: true });
-          walletBtn.textContent = 'Wallet Connected';
-          walletBtn.style.backgroundColor = '#1abc9c';
-        } catch (err) {
-          // Silent fail
-        }
+          const response = await window.solana.connect({ onlyIfTrusted: true });
+          const btn = document.getElementById('walletBtn');
+          btn.textContent = `Connected: ${response.publicKey.toString().slice(0,4)}...`;
+          btn.style.backgroundColor = '#2ecc71';
+        } catch {}
       }
-    });
-
-    // Smooth Scroll Reveal (excluding hero)
-    const sections = document.querySelectorAll('section:not(.hero)');
-    window.addEventListener('scroll', () => {
-      const triggerBottom = window.innerHeight * 0.85;
-      sections.forEach(section => {
-        const sectionTop = section.getBoundingClientRect().top;
-        if (sectionTop < triggerBottom) {
-          section.classList.add('reveal');
-        }
-      });
     });
   </script>
-
-  <script src="chart.js" defer></script>
 </body>
 </html>
