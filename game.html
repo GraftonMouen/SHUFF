@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Solana Golf Game ($SHUFF)</title>
-  <script src="https://unpkg.com/@solana/web3.js@1.70.1/lib/index.iife.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.3.8/dist/browser/index.iife.js"></script>
+  <script src="https://unpkg.com/@solana/web3.js@1.73.0/lib/index.iife.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.3.9/dist/browser/index.iife.min.js"></script>
   <style>
     body { 
       font-family: 'Arial', sans-serif;
@@ -12,6 +13,7 @@
       color: #333;
       text-align: center;
       padding: 20px;
+      margin: 0;
     }
     
     .game-container {
@@ -26,6 +28,7 @@
     h1 {
       color: #2c3e50;
       margin-bottom: 20px;
+      font-size: clamp(1.5rem, 3vw, 2rem);
     }
     
     #game-canvas {
@@ -34,6 +37,10 @@
       margin: 20px auto;
       display: block;
       box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      width: 100%;
+      max-width: 800px;
+      height: auto;
+      aspect-ratio: 2/1;
     }
     
     #wallet-info {
@@ -44,16 +51,25 @@
       text-align: left;
     }
     
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    
     button {
       background: #3498db;
       color: white;
       border: none;
       padding: 10px 20px;
-      margin: 10px 5px;
       border-radius: 5px;
       cursor: pointer;
       font-size: 16px;
       transition: background 0.3s;
+      flex: 1 0 auto;
+      min-width: 120px;
     }
     
     button:hover {
@@ -65,12 +81,22 @@
       cursor: not-allowed;
     }
     
+    #swing-input-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+      margin: 15px 0;
+    }
+    
     input {
       padding: 10px;
       border: 1px solid #ddd;
       border-radius: 5px;
       font-size: 16px;
-      width: 200px;
+      min-width: 200px;
+      flex: 1 0 auto;
     }
     
     #status {
@@ -120,31 +146,65 @@
     #leaderboard-list li:last-child {
       border-bottom: none;
     }
+    
+    .tx-link {
+      color: #3498db;
+      text-decoration: none;
+    }
+    
+    .tx-link:hover {
+      text-decoration: underline;
+    }
+    
+    @media (max-width: 600px) {
+      .button-group {
+        flex-direction: column;
+      }
+      
+      button {
+        width: 100%;
+      }
+      
+      #swing-input-container {
+        flex-direction: column;
+      }
+      
+      input {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="game-container">
     <h1>🏌️ Solana Golf Game ($SHUFF)</h1>
-    <button id="connect-wallet-btn">Connect Phantom Wallet</button>
+    
+    <div class="button-group">
+      <button id="connect-wallet-btn">Connect Phantom Wallet</button>
+      <button id="disconnect-btn" disabled>Disconnect</button>
+      <button id="refresh-btn">🔄 Refresh</button>
+    </div>
 
     <div id="wallet-info" style="display:none;">
       <p>Wallet Address: <span id="wallet-address"></span></p>
       <p>Balance: <span id="wallet-balance">0</span> SHUFF</p>
+      <p id="last-tx-info" style="display:none;">Last TX: <a href="#" id="last-tx-link" class="tx-link" target="_blank">View</a></p>
     </div>
 
-    <div>
+    <div id="swing-input-container">
       <input type="number" id="swing-amount" placeholder="Enter SHUFF amount" min="0.1" step="0.1">
       <button id="swing-btn" disabled>Swing!</button>
     </div>
 
     <div id="status"></div>
+    <div id="fee-estimate" style="margin: 10px 0; color: #7f8c8d;"></div>
 
     <div id="loading-spinner" style="display:none;">
       <div class="spinner"></div>
       <p>Processing transaction...</p>
     </div>
 
-    <canvas id="game-canvas" width="800" height="400"></canvas>
+    <canvas id="game-canvas"></canvas>
 
     <div id="leaderboard">
       <h2>🏆 Leaderboard</h2>
@@ -153,32 +213,77 @@
   </div>
 
   <script>
-    // Initialize SPL Token
-    const splToken = window.splToken;
+    // Initialize SPL Token with robust fallback
+    const splToken = window.splToken || {
+      Token: solanaWeb3.SPLToken,
+      getAssociatedTokenAddress: solanaWeb3.SPLToken.getAssociatedTokenAddress,
+      createTransferInstruction: solanaWeb3.SPLToken.createTransferInstruction,
+      createAssociatedTokenAccountInstruction: solanaWeb3.SPLToken.createAssociatedTokenAccountInstruction,
+      getAccount: (accountInfo) => {
+        return new solanaWeb3.SPLToken.Token(
+          connection,
+          shuffMint,
+          solanaWeb3.TOKEN_PROGRAM_ID,
+          null
+        ).getAccountInfo(accountInfo.pubkey);
+      }
+    };
     
-    // Solana Configuration
-    const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
+    // RPC Endpoints with fallback
+    const endpoints = [
+      solanaWeb3.clusterApiUrl('mainnet-beta'),
+      'https://solana-mainnet.rpcpool.com',
+      'https://api.mainnet-beta.solana.com'
+    ];
     
-    // Treasury Wallet (80%)
+    // Game Configuration
+    const shuffMint = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump');
     const treasuryWallet = new solanaWeb3.PublicKey('649fCzukZDSWwmhjQSAEJCyW6LXN8TDj5ytFxVtFv4ry');
-    
-    // Liquidity Pool Wallet (20%) - REPLACE WITH YOUR ADDRESS
     const liquidityPoolWallet = new solanaWeb3.PublicKey('BAHjp9xTpndjiD8mAP9PABd1UP8HQMgZRTyhFm73WJDC');
     
-    const shuffMint = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump');
-    
+    // Game State
     let walletAddress = null;
     let walletPublicKey = null;
+    let connection = null;
+    let animationFrameId = null;
+    let lastTransactionSignature = null;
 
     // DOM Elements
     const connectBtn = document.getElementById('connect-wallet-btn');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    const refreshBtn = document.getElementById('refresh-btn');
     const walletAddressSpan = document.getElementById('wallet-address');
     const walletBalanceSpan = document.getElementById('wallet-balance');
     const swingAmountInput = document.getElementById('swing-amount');
     const swingBtn = document.getElementById('swing-btn');
     const statusDiv = document.getElementById('status');
+    const feeEstimateDiv = document.getElementById('fee-estimate');
     const loadingSpinner = document.getElementById('loading-spinner');
     const leaderboardList = document.getElementById('leaderboard-list');
+    const lastTxInfo = document.getElementById('last-tx-info');
+    const lastTxLink = document.getElementById('last-tx-link');
+
+    // Initialize Connection
+    async function initializeConnection() {
+      for (const endpoint of endpoints) {
+        try {
+          const testConnection = new solanaWeb3.Connection(endpoint);
+          await testConnection.getVersion();
+          connection = testConnection;
+          console.log("Connected to:", endpoint);
+          return;
+        } catch (err) {
+          console.warn("Failed to connect to:", endpoint, err);
+        }
+      }
+      throw new Error("Could not connect to any Solana RPC endpoint");
+    }
+
+    // Sanitize Input
+    function sanitizeInput(input) {
+      if (typeof input !== 'string') input = input.toString();
+      return input.replace(/[<>"'&]/g, '');
+    }
 
     // Connect Wallet
     async function connectWallet() {
@@ -190,6 +295,8 @@
           throw new Error("Phantom Wallet not installed!");
         }
         
+        if (!connection) await initializeConnection();
+        
         const response = await window.solana.connect();
         walletPublicKey = response.publicKey;
         walletAddress = walletPublicKey.toString();
@@ -198,6 +305,7 @@
         document.getElementById('wallet-info').style.display = 'block';
         swingBtn.disabled = false;
         connectBtn.textContent = "Wallet Connected";
+        disconnectBtn.disabled = false;
         
         // Get balance
         const balance = await getShuffBalance(walletPublicKey);
@@ -212,6 +320,32 @@
         statusDiv.textContent = `Error: ${err.message}`;
         statusDiv.style.color = "#e74c3c";
         connectBtn.disabled = false;
+        console.error("Connection error:", err);
+      }
+    }
+
+    // Disconnect Wallet
+    async function disconnectWallet() {
+      try {
+        if (window.solana && window.solana.isPhantom) {
+          await window.solana.disconnect();
+        }
+        walletAddress = null;
+        walletPublicKey = null;
+        walletAddressSpan.textContent = '';
+        walletBalanceSpan.textContent = '0';
+        document.getElementById('wallet-info').style.display = 'none';
+        swingBtn.disabled = true;
+        connectBtn.textContent = "Connect Phantom Wallet";
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+        lastTxInfo.style.display = 'none';
+        statusDiv.textContent = "Wallet disconnected";
+        statusDiv.style.color = "#2ecc71";
+      } catch (err) {
+        statusDiv.textContent = `Error disconnecting: ${err.message}`;
+        statusDiv.style.color = "#e74c3c";
+        console.error("Disconnection error:", err);
       }
     }
 
@@ -226,10 +360,36 @@
         const accountInfo = await connection.getAccountInfo(tokenAccount);
         if (!accountInfo) return 0;
         
-        const tokenAmount = splToken.getAccount(accountInfo).amount;
-        return (tokenAmount / 1000000000).toFixed(2);
-      } catch {
+        const token = new splToken.Token(
+          connection,
+          shuffMint,
+          solanaWeb3.TOKEN_PROGRAM_ID,
+          null
+        );
+        
+        const tokenAccountInfo = await token.getAccountInfo(tokenAccount);
+        return (tokenAccountInfo.amount / 1000000000).toFixed(2);
+      } catch (err) {
+        console.error("Balance check error:", err);
         return 0;
+      }
+    }
+
+    // Estimate Transaction Fees
+    async function estimateFees(instructions) {
+      try {
+        const testTransaction = new solanaWeb3.Transaction().add(...instructions);
+        const fees = await connection.getFeeForMessage(
+          testTransaction.compileMessage(),
+          'confirmed'
+        );
+        
+        if (fees.value !== null) {
+          feeEstimateDiv.textContent = `Estimated fee: ${fees.value} SOL`;
+          feeEstimateDiv.style.color = "#7f8c8d";
+        }
+      } catch (err) {
+        console.warn("Fee estimation failed:", err);
       }
     }
 
@@ -242,14 +402,20 @@
         // Validate amount
         if (amount <= 0) throw new Error("Amount must be positive");
         
-        // Verify splToken exists
-        if (!splToken) {
-          throw new Error("Token program not loaded. Please refresh the page.");
+        // Check token program
+        if (!splToken || !splToken.Token) {
+          throw new Error("Token program not properly initialized. Please refresh the page.");
         }
         
-        // Calculate splits (80% to treasury, 20% to liquidity pool)
-        const treasuryAmount = amount * 0.8;
-        const liquidityAmount = amount * 0.2;
+        // Check balance
+        const balance = await getShuffBalance(walletPublicKey);
+        if (amount > parseFloat(balance)) {
+          throw new Error("Insufficient SHUFF balance");
+        }
+        
+        // Calculate splits with precise math
+        const treasuryAmount = Math.floor(amount * 100 * 0.8) / 100;
+        const liquidityAmount = Math.floor(amount * 100 * 0.2) / 100;
         
         // Get token accounts
         const fromTokenAccount = await splToken.getAssociatedTokenAddress(
@@ -267,6 +433,12 @@
           liquidityPoolWallet
         );
         
+        // Verify sender account exists
+        const fromAccountInfo = await connection.getAccountInfo(fromTokenAccount);
+        if (!fromAccountInfo) {
+          throw new Error("You don't have a SHUFF token account");
+        }
+        
         // Create instructions
         const instructions = [];
         
@@ -281,6 +453,7 @@
               shuffMint
             )
           );
+          statusDiv.textContent = "Creating token account (0.002039 SOL fee)...";
         }
         
         const liquidityAccountInfo = await connection.getAccountInfo(liquidityTokenAccount);
@@ -293,63 +466,94 @@
               shuffMint
             )
           );
+          statusDiv.textContent = "Creating token account (0.002039 SOL fee)...";
         }
         
-        // Add transfer instructions (80% to treasury)
+        // Add transfer instructions
         instructions.push(
           splToken.createTransferInstruction(
             fromTokenAccount,
             treasuryTokenAccount,
             walletPublicKey,
-            BigInt(Math.floor(treasuryAmount * 1000000000)) // SHUFF has 9 decimals
+            BigInt(Math.floor(treasuryAmount * 1000000000))
           )
         );
         
-        // Add transfer instructions (20% to liquidity pool)
         instructions.push(
           splToken.createTransferInstruction(
             fromTokenAccount,
             liquidityTokenAccount,
             walletPublicKey,
-            BigInt(Math.floor(liquidityAmount * 1000000000)) // SHUFF has 9 decimals
+            BigInt(Math.floor(liquidityAmount * 1000000000))
           )
         );
         
-        // Send transaction
+        // Estimate fees
+        await estimateFees(instructions);
+        
+        // Create transaction
         const recentBlockhash = await connection.getLatestBlockhash();
         const transaction = new solanaWeb3.Transaction({
           recentBlockhash: recentBlockhash.blockhash,
           feePayer: walletPublicKey
         }).add(...instructions);
         
-        const signed = await window.solana.signTransaction(transaction);
-        const signature = await connection.sendRawTransaction(signed.serialize());
-        
-        statusDiv.textContent = "Transaction sent, confirming...";
-        const confirmation = await connection.confirmTransaction(signature);
-        
-        if (confirmation.value.err) {
-          throw new Error("Transaction failed");
+        // Check transaction size
+        if (transaction.serialize().length > 1232) {
+          throw new Error("Transaction too large. Try a smaller amount.");
         }
         
-        statusDiv.textContent = `🎉 Success! ${treasuryAmount.toFixed(2)} SHUFF to treasury, ${liquidityAmount.toFixed(2)} SHUFF to liquidity`;
-        statusDiv.style.color = "#2ecc71";
+        // Sign and send with timeout
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
         
-        // Update balance
-        const newBalance = await getShuffBalance(walletPublicKey);
-        walletBalanceSpan.textContent = newBalance;
-        
-        // Animate golf swing
-        animateGolfBall();
-        
-        // Update leaderboard
-        updateLeaderboard(walletAddress, amount);
+        try {
+          const signed = await window.solana.signTransaction(transaction);
+          const signature = await connection.sendRawTransaction(
+            signed.serialize(),
+            { abortSignal: controller.signal }
+          );
+          
+          statusDiv.textContent = "Transaction sent, confirming...";
+          const confirmation = await connection.confirmTransaction(
+            signature,
+            'confirmed'
+          );
+          
+          if (confirmation.value.err) {
+            throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+          }
+          
+          lastTransactionSignature = signature;
+          lastTxLink.href = `https://solscan.io/tx/${signature}?cluster=mainnet-beta`;
+          lastTxInfo.style.display = 'block';
+          
+          statusDiv.textContent = `🎉 Success! ${treasuryAmount.toFixed(2)} SHUFF to treasury, ${liquidityAmount.toFixed(2)} SHUFF to liquidity`;
+          statusDiv.style.color = "#2ecc71";
+          
+          // Update balance
+          const newBalance = await getShuffBalance(walletPublicKey);
+          walletBalanceSpan.textContent = newBalance;
+          
+          // Animate golf swing
+          animateGolfBall();
+          
+          // Update leaderboard
+          updateLeaderboard(walletAddress, amount);
+        } finally {
+          clearTimeout(timeout);
+        }
       } catch (err) {
-        statusDiv.textContent = `Transaction failed: ${err.message}`;
+        if (err.name === 'AbortError') {
+          statusDiv.textContent = "Transaction timed out after 30 seconds";
+        } else {
+          statusDiv.textContent = `Transaction failed: ${err.message}`;
+        }
         statusDiv.style.color = "#e74c3c";
         console.error("Transaction error:", err);
       } finally {
         loadingSpinner.style.display = 'none';
+        feeEstimateDiv.textContent = '';
       }
     }
 
@@ -357,6 +561,12 @@
     function animateGolfBall() {
       const canvas = document.getElementById('game-canvas');
       const ctx = canvas.getContext('2d');
+      
+      // Adjust canvas size for display while maintaining aspect ratio
+      const displayWidth = Math.min(canvas.width, window.innerWidth - 40);
+      const displayHeight = displayWidth / 2;
+      canvas.style.width = `${displayWidth}px`;
+      canvas.style.height = `${displayHeight}px`;
       
       // Course elements
       const obstacles = [
@@ -474,8 +684,13 @@
         draw();
         
         if (!ball.inHole && (ball.vx !== 0 || ball.vy !== 0)) {
-          requestAnimationFrame(gameLoop);
+          animationFrameId = requestAnimationFrame(gameLoop);
         }
+      }
+      
+      // Cancel any existing animation
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
       }
       
       // Start the game
@@ -484,41 +699,69 @@
 
     // Leaderboard Functions
     function loadLeaderboard() {
-      const leaderboard = JSON.parse(localStorage.getItem('shuffLeaderboard') || '[]');
-      displayLeaderboard(leaderboard);
+      try {
+        const leaderboard = JSON.parse(localStorage.getItem('shuffLeaderboard') || '[]');
+        displayLeaderboard(leaderboard);
+      } catch (err) {
+        console.error("Error loading leaderboard:", err);
+        leaderboardList.innerHTML = '<li>Error loading leaderboard</li>';
+      }
     }
     
     function updateLeaderboard(address, amount) {
-      const leaderboard = JSON.parse(localStorage.getItem('shuffLeaderboard') || '[]');
-      leaderboard.push({
-        address: address,
-        amount: amount,
-        date: new Date().toISOString()
-      });
-      
-      localStorage.setItem('shuffLeaderboard', JSON.stringify(leaderboard));
-      displayLeaderboard(leaderboard);
+      try {
+        const sanitizedAmount = sanitizeInput(amount);
+        const sanitizedAddress = sanitizeInput(address);
+        
+        const leaderboard = JSON.parse(localStorage.getItem('shuffLeaderboard') || '[]');
+        leaderboard.push({
+          address: sanitizedAddress,
+          amount: sanitizedAmount,
+          date: new Date().toISOString()
+        });
+        
+        localStorage.setItem('shuffLeaderboard', JSON.stringify(leaderboard));
+        displayLeaderboard(leaderboard);
+      } catch (err) {
+        console.error("Error updating leaderboard:", err);
+      }
     }
     
     function displayLeaderboard(entries) {
-      // Sort by date (newest first)
-      entries.sort((a, b) => new Date(b.date) - new Date(a.date));
-      
-      // Get top 10
-      const topEntries = entries.slice(0, 10);
-      
-      // Display
-      leaderboardList.innerHTML = topEntries.map(entry => `
-        <li>
-          <strong>${entry.address.slice(0,4)}...${entry.address.slice(-4)}</strong>
-          - ${entry.amount} SHUFF
-          <small>${new Date(entry.date).toLocaleString()}</small>
-        </li>
-      `).join('');
+      try {
+        // Sort by date (newest first)
+        entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        // Get top 10
+        const topEntries = entries.slice(0, 10);
+        
+        // Display with sanitized output
+        leaderboardList.innerHTML = topEntries.map(entry => {
+          const displayAmount = sanitizeInput(entry.amount);
+          const displayAddress = sanitizeInput(entry.address);
+          const displayDate = new Date(entry.date).toLocaleString();
+          
+          return `
+            <li>
+              <strong>${displayAddress.slice(0,4)}...${displayAddress.slice(-4)}</strong>
+              - ${displayAmount} SHUFF
+              <small>${displayDate}</small>
+            </li>
+          `;
+        }).join('') || '<li>No entries yet</li>';
+      } catch (err) {
+        console.error("Error displaying leaderboard:", err);
+        leaderboardList.innerHTML = '<li>Error displaying leaderboard</li>';
+      }
     }
 
     // Event Listeners
     connectBtn.addEventListener('click', connectWallet);
+    disconnectBtn.addEventListener('click', disconnectWallet);
+    refreshBtn.addEventListener('click', () => {
+      window.location.reload();
+    });
+    
     swingBtn.addEventListener('click', async () => {
       const amount = parseFloat(swingAmountInput.value);
       if (!amount || amount <= 0) {
@@ -532,24 +775,47 @@
     
     // Auto-connect if returning user
     window.addEventListener('load', async () => {
-      if (window.solana && window.solana.isPhantom) {
-        try {
+      try {
+        if (window.solana && window.solana.isPhantom) {
           const response = await window.solana.connect({ onlyIfTrusted: true });
           walletPublicKey = response.publicKey;
           walletAddress = walletPublicKey.toString();
           
-          walletAddressSpan.textContent = `${walletAddress.slice(0,4)}...`;
+          walletAddressSpan.textContent = `${walletAddress.slice(0,4)}...${walletAddress.slice(-4)}`;
           document.getElementById('wallet-info').style.display = 'block';
           swingBtn.disabled = false;
           connectBtn.textContent = "Wallet Connected";
+          disconnectBtn.disabled = false;
           
           const balance = await getShuffBalance(walletPublicKey);
           walletBalanceSpan.textContent = balance;
           
           loadLeaderboard();
-        } catch (err) {
-          console.log("Auto-connect skipped:", err);
         }
+      } catch (err) {
+        console.log("Auto-connect skipped:", err);
+      }
+      
+      // Initialize connection
+      if (!connection) {
+        try {
+          await initializeConnection();
+        } catch (err) {
+          statusDiv.textContent = "Error connecting to Solana network";
+          statusDiv.style.color = "#e74c3c";
+          console.error("Connection error:", err);
+        }
+      }
+    });
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      if (animationFrameId) {
+        const canvas = document.getElementById('game-canvas');
+        const displayWidth = Math.min(canvas.width, window.innerWidth - 40);
+        const displayHeight = displayWidth / 2;
+        canvas.style.width = `${displayWidth}px`;
+        canvas.style.height = `${displayHeight}px`;
       }
     });
   </script>
