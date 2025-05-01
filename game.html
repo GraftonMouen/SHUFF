@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Solana Golf Game ($SHUFF)</title>
   <script src="https://unpkg.com/@solana/web3.js@1.70.1/lib/index.iife.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.3.8/dist/browser/index.iife.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.3.8/dist/browser/index.iife.js"></script>
   <style>
     body { 
       font-family: 'Arial', sans-serif;
@@ -153,9 +153,18 @@
   </div>
 
   <script>
+    // Initialize SPL Token
+    const splToken = window.splToken;
+    
     // Solana Configuration
     const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
+    
+    // Treasury Wallet (80%)
     const treasuryWallet = new solanaWeb3.PublicKey('649fCzukZDSWwmhjQSAEJCyW6LXN8TDj5ytFxVtFv4ry');
+    
+    // Liquidity Pool Wallet (20%) - REPLACE WITH YOUR ADDRESS
+    const liquidityPoolWallet = new solanaWeb3.PublicKey('BAHjp9xTpndjiD8mAP9PABd1UP8HQMgZRTyhFm73WJDC');
+    
     const shuffMint = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump');
     
     let walletAddress = null;
@@ -224,7 +233,7 @@
       }
     }
 
-    // Send Transaction
+    // Send Transaction with 80/20 Split
     async function sendTransaction(amount) {
       loadingSpinner.style.display = 'block';
       statusDiv.textContent = "Preparing transaction...";
@@ -233,42 +242,76 @@
         // Validate amount
         if (amount <= 0) throw new Error("Amount must be positive");
         
+        // Verify splToken exists
+        if (!splToken) {
+          throw new Error("Token program not loaded. Please refresh the page.");
+        }
+        
+        // Calculate splits (80% to treasury, 20% to liquidity pool)
+        const treasuryAmount = amount * 0.8;
+        const liquidityAmount = amount * 0.2;
+        
         // Get token accounts
         const fromTokenAccount = await splToken.getAssociatedTokenAddress(
           shuffMint,
           walletPublicKey
         );
         
-        const toTokenAccount = await splToken.getAssociatedTokenAddress(
+        const treasuryTokenAccount = await splToken.getAssociatedTokenAddress(
           shuffMint,
           treasuryWallet
+        );
+        
+        const liquidityTokenAccount = await splToken.getAssociatedTokenAddress(
+          shuffMint,
+          liquidityPoolWallet
         );
         
         // Create instructions
         const instructions = [];
         
-        // Create associated token account if needed
-        const toAccountInfo = await connection.getAccountInfo(toTokenAccount);
-        if (!toAccountInfo) {
+        // Create associated token accounts if needed
+        const treasuryAccountInfo = await connection.getAccountInfo(treasuryTokenAccount);
+        if (!treasuryAccountInfo) {
           instructions.push(
             splToken.createAssociatedTokenAccountInstruction(
               walletPublicKey,
-              toTokenAccount,
+              treasuryTokenAccount,
               treasuryWallet,
               shuffMint
             )
           );
         }
         
-        // Add transfer instruction
-        const sendAmount = BigInt(Math.floor(amount * 1000000000)); // SHUFF has 9 decimals
+        const liquidityAccountInfo = await connection.getAccountInfo(liquidityTokenAccount);
+        if (!liquidityAccountInfo) {
+          instructions.push(
+            splToken.createAssociatedTokenAccountInstruction(
+              walletPublicKey,
+              liquidityTokenAccount,
+              liquidityPoolWallet,
+              shuffMint
+            )
+          );
+        }
         
+        // Add transfer instructions (80% to treasury)
         instructions.push(
           splToken.createTransferInstruction(
             fromTokenAccount,
-            toTokenAccount,
+            treasuryTokenAccount,
             walletPublicKey,
-            sendAmount
+            BigInt(Math.floor(treasuryAmount * 1000000000)) // SHUFF has 9 decimals
+          )
+        );
+        
+        // Add transfer instructions (20% to liquidity pool)
+        instructions.push(
+          splToken.createTransferInstruction(
+            fromTokenAccount,
+            liquidityTokenAccount,
+            walletPublicKey,
+            BigInt(Math.floor(liquidityAmount * 1000000000)) // SHUFF has 9 decimals
           )
         );
         
@@ -289,7 +332,7 @@
           throw new Error("Transaction failed");
         }
         
-        statusDiv.textContent = "🎉 Transaction successful! Swing away!";
+        statusDiv.textContent = `🎉 Success! ${treasuryAmount.toFixed(2)} SHUFF to treasury, ${liquidityAmount.toFixed(2)} SHUFF to liquidity`;
         statusDiv.style.color = "#2ecc71";
         
         // Update balance
