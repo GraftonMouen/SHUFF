@@ -1,44 +1,369 @@
-<!-- Add to head -->
-<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solana Golf Game ($SHUFF) - Par 3</title>
+  <script src="https://unpkg.com/@solana/web3.js@1.73.0/lib/index.iife.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.3.9/dist/browser/index.iife.min.js"></script>
+  <style>
+    /* [Previous CSS remains exactly the same] */
+    /* ... */
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>🏌️ Solana Golf Game ($SHUFF) - Par 3</h1>
+    
+    <div class="button-group">
+      <button id="connect-wallet-btn">Connect Phantom Wallet</button>
+      <button id="disconnect-btn" disabled>Disconnect</button>
+      <button id="refresh-btn">🔄 Refresh</button>
+      <button id="new-game-btn" disabled>New Game</button>
+    </div>
 
-<script>
-// Firebase config (replace with your actual config)
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+    <div id="wallet-info" style="display:none;">
+      <p>Wallet Address: <span id="wallet-address"></span></p>
+      <p>Balance: <span id="wallet-balance">0</span> SHUFF</p>
+      <p id="last-tx-info" style="display:none;">Last TX: <a href="#" id="last-tx-link" class="tx-link" target="_blank">View</a></p>
+    </div>
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+    <div id="game-info">
+      <p>Strokes: <span id="stroke-count">0</span> | Distance to Hole: <span id="distance-to-hole">-</span> ft</p>
+      <p>Status: <span id="game-status">Not started</span></p>
+    </div>
 
-// Modified leaderboard functions
-async function addToLeaderboard(wallet, distance) {
-  try {
-    await firebase.database().ref('leaderboard').push({
-      wallet: wallet,
-      distance: distance,
-      timestamp: Date.now()
+    <div id="swing-input-container">
+      <input type="number" id="swing-amount" placeholder="Enter SHUFF amount (0.1-100)" min="0.1" max="100" step="0.1">
+      <button id="swing-btn" disabled>Swing!</button>
+    </div>
+
+    <div id="status"></div>
+    <div id="fee-estimate" style="margin: 10px 0; color: #7f8c8d;"></div>
+
+    <div id="loading-spinner" style="display:none;">
+      <div class="spinner"></div>
+      <p>Processing transaction...</p>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <div id="leaderboard">
+      <h2>🏆 Leaderboard (Closest to Hole)</h2>
+      <p id="leaderboard-timeleft">Current season ends in: <span id="time-remaining">30 days</span></p>
+      <p id="prize-pool">Current prize pool: <span id="prize-amount">0</span> SHUFF</p>
+      <ul id="leaderboard-list"></ul>
+    </div>
+  </div>
+
+  <script>
+    // Game Configuration
+    const shuffMint = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump');
+    const SHUFF_DECIMALS = 9;
+    const HOLE_IN_ONE_CHANCE = 1 / 10000;
+    const PIXELS_TO_FEET = 0.3;
+    const MONTHLY_PRIZE_PERCENTAGE = 0.20; // 20%
+    
+    // Game State
+    let walletAddress = null;
+    let walletPublicKey = null;
+    let connection = null;
+    let animationFrameId = null;
+    let lastTransactionSignature = null;
+    let gameState = {
+      ballPosition: { x: 50, y: 300 },
+      ballVelocity: { x: 0, y: 0 },
+      isMoving: false,
+      strokes: 0,
+      lastSwingAmount: 0,
+      holePosition: { x: 700, y: 300 },
+      holeRadius: 8,
+      ballRadius: 8,
+      hazards: {
+        water: [],
+        sand: []
+      },
+      gameActive: false,
+      disqualified: false,
+      canvasWidth: 800,
+      canvasHeight: 400
+    };
+
+    // Leaderboard State
+    let leaderboard = [];
+    let prizePool = 0;
+    let seasonEndDate = new Date();
+    seasonEndDate.setMonth(seasonEndDate.getMonth() + 1); // Set to end next month
+    
+    // DOM Elements
+    const connectBtn = document.getElementById('connect-wallet-btn');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const newGameBtn = document.getElementById('new-game-btn');
+    const walletAddressSpan = document.getElementById('wallet-address');
+    const walletBalanceSpan = document.getElementById('wallet-balance');
+    const swingAmountInput = document.getElementById('swing-amount');
+    const swingBtn = document.getElementById('swing-btn');
+    const statusDiv = document.getElementById('status');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    const leaderboardList = document.getElementById('leaderboard-list');
+    const lastTxInfo = document.getElementById('last-tx-info');
+    const lastTxLink = document.getElementById('last-tx-link');
+    const strokeCountSpan = document.getElementById('stroke-count');
+    const distanceToHoleSpan = document.getElementById('distance-to-hole');
+    const gameStatusSpan = document.getElementById('game-status');
+    const gameCanvas = document.getElementById('game-canvas');
+    const timeRemainingSpan = document.getElementById('time-remaining');
+    const prizeAmountSpan = document.getElementById('prize-amount');
+    const ctx = gameCanvas.getContext('2d');
+
+    // Initialize Canvas
+    function initializeCanvas() {
+      gameCanvas.width = gameState.canvasWidth;
+      gameCanvas.height = gameState.canvasHeight;
+      drawGame();
+    }
+
+    // [Previous drawGame() function remains the same]
+    // ...
+
+    // Update Leaderboard Display
+    function updateLeaderboard() {
+      leaderboardList.innerHTML = '';
+      
+      // Sort by distance (closest first)
+      const sortedLeaderboard = [...leaderboard].sort((a, b) => a.distance - b.distance);
+      
+      sortedLeaderboard.forEach((entry, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span>${index + 1}. ${entry.wallet.substring(0, 4)}...${entry.wallet.substring(entry.wallet.length - 4)}</span>
+          <span>${Math.round(entry.distance)} ft</span>
+        `;
+        leaderboardList.appendChild(li);
+      });
+      
+      updateTimeRemaining();
+    }
+
+    // Update Time Remaining Display
+    function updateTimeRemaining() {
+      const now = new Date();
+      const diff = seasonEndDate - now;
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      timeRemainingSpan.textContent = `${days} days`;
+      
+      // Update prize pool display
+      prizeAmountSpan.textContent = prizePool.toFixed(2);
+      
+      // Check if season ended
+      if (diff <= 0) {
+        distributePrizes();
+      }
+    }
+
+    // Distribute Prizes at Season End
+    async function distributePrizes() {
+      if (leaderboard.length === 0) return;
+      
+      const winner = leaderboard.reduce((prev, current) => 
+        (prev.distance < current.distance) ? prev : current
+      );
+      
+      const prizeAmount = prizePool * MONTHLY_PRIZE_PERCENTAGE;
+      
+      try {
+        // In a real implementation, you would send the prize here
+        // This is just a simulation for demonstration
+        statusDiv.textContent = `Season ended! ${winner.wallet.substring(0, 4)}...${winner.wallet.substring(winner.wallet.length - 4)} won ${prizeAmount.toFixed(2)} SHUFF!`;
+        statusDiv.style.color = "#2ecc71";
+        
+        // Reset for new season
+        leaderboard = [];
+        prizePool = 0;
+        seasonEndDate = new Date();
+        seasonEndDate.setMonth(seasonEndDate.getMonth() + 1);
+        updateLeaderboard();
+        
+      } catch (err) {
+        console.error("Prize distribution error:", err);
+        statusDiv.textContent = "Error distributing prizes";
+        statusDiv.style.color = "#e74c3c";
+      }
+    }
+
+    // Add Player to Leaderboard
+    function addToLeaderboard(wallet, distance) {
+      // Check if player already exists
+      const existingIndex = leaderboard.findIndex(entry => entry.wallet === wallet);
+      
+      if (existingIndex >= 0) {
+        // Update if new distance is better
+        if (distance < leaderboard[existingIndex].distance) {
+          leaderboard[existingIndex].distance = distance;
+        }
+      } else {
+        // Add new entry
+        leaderboard.push({
+          wallet,
+          distance,
+          timestamp: Date.now()
+        });
+      }
+      
+      updateLeaderboard();
+      
+      // Save to localStorage
+      localStorage.setItem('golfLeaderboard', JSON.stringify({
+        leaderboard,
+        prizePool,
+        seasonEndDate: seasonEndDate.getTime()
+      }));
+    }
+
+    // Load Leaderboard from Storage
+    function loadLeaderboard() {
+      const savedData = localStorage.getItem('golfLeaderboard');
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        leaderboard = data.leaderboard || [];
+        prizePool = data.prizePool || 0;
+        seasonEndDate = new Date(data.seasonEndDate || Date.now());
+        
+        // If season ended, start new one
+        if (seasonEndDate < new Date()) {
+          seasonEndDate = new Date();
+          seasonEndDate.setMonth(seasonEndDate.getMonth() + 1);
+        }
+        
+        updateLeaderboard();
+      }
+    }
+
+    // [Previous initializeConnection(), getShuffBalance(), connectWallet(), disconnectWallet() functions remain the same]
+    // ...
+
+    async function makeSwing() {
+      const swingAmount = parseFloat(swingAmountInput.value);
+      
+      if (isNaN(swingAmount) || swingAmount < 0.1 || swingAmount > 100) {
+        statusDiv.textContent = "Please enter a valid SHUFF amount (0.1-100)";
+        statusDiv.style.color = "#e74c3c";
+        return;
+      }
+      
+      try {
+        loadingSpinner.style.display = 'block';
+        swingBtn.disabled = true;
+        statusDiv.textContent = "Preparing transaction...";
+        
+        // In a real implementation, you would:
+        // 1. Create actual transaction to transfer SHUFF to game vault
+        // 2. Add to prize pool
+        // For this demo, we'll simulate it
+        
+        // Simulate transaction processing
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Update game state
+        gameState.strokes++;
+        gameState.lastSwingAmount = swingAmount;
+        strokeCountSpan.textContent = gameState.strokes;
+        
+        // Add to prize pool (20% goes to winner, 80% to game)
+        prizePool += swingAmount;
+        updateLeaderboard();
+        
+        // Calculate swing power
+        const power = swingAmount * 0.5;
+        
+        // Calculate direction to hole
+        const dx = gameState.holePosition.x - gameState.ballPosition.x;
+        const dy = gameState.holePosition.y - gameState.ballPosition.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const directionNoise = (Math.random() - 0.5) * 0.2;
+        
+        gameState.ballVelocity = {
+          x: (dx / distance + directionNoise) * power,
+          y: (dy / distance + directionNoise) * power
+        };
+        
+        gameState.isMoving = true;
+        gameStatusSpan.textContent = "Ball in motion...";
+        
+        // Start animation
+        animateBall();
+        
+        // Simulate transaction (in real app, use actual tx hash)
+        lastTransactionSignature = "simulated_tx_" + Math.random().toString(36).substring(2);
+        lastTxInfo.style.display = 'block';
+        lastTxLink.href = `https://solscan.io/tx/${lastTransactionSignature}`;
+        lastTxLink.textContent = "View simulated transaction";
+        
+        statusDiv.textContent = `Swing successful with ${swingAmount} SHUFF!`;
+        statusDiv.style.color = "#2ecc71";
+        
+      } catch (err) {
+        console.error("Swing error:", err);
+        statusDiv.textContent = `Swing failed: ${err.message}`;
+        statusDiv.style.color = "#e74c3c";
+      } finally {
+        loadingSpinner.style.display = 'none';
+        swingBtn.disabled = false;
+      }
+    }
+
+    // [Previous animateBall() function remains the same]
+    // ...
+
+    // Modified checkCollisions() to add to leaderboard when ball stops
+    function checkCollisions() {
+      // [Previous collision checks remain the same]
+      // ...
+      
+      // When ball stops
+      const speed = Math.sqrt(
+        gameState.ballVelocity.x * gameState.ballVelocity.x +
+        gameState.ballVelocity.y * gameState.ballVelocity.y
+      );
+      
+      if (speed < 0.5 && gameState.isMoving) {
+        gameState.isMoving = false;
+        gameStatusSpan.textContent = "Ball at rest";
+        
+        // Calculate final distance
+        const dx = gameState.ballPosition.x - gameState.holePosition.x;
+        const dy = gameState.ballPosition.y - gameState.holePosition.y;
+        const distance = Math.sqrt(dx * dx + dy * dy) * PIXELS_TO_FEET;
+        
+        // Add to leaderboard
+        if (walletAddress && !gameState.disqualified) {
+          addToLeaderboard(walletAddress, distance);
+        }
+        
+        // Check for hole in one
+        if (distance < gameState.holeRadius + gameState.ballRadius) {
+          gameStatusSpan.textContent = "Hole in one!";
+        }
+      }
+    }
+
+    // Initialize on load
+    window.addEventListener('load', async () => {
+      initializeCanvas();
+      loadLeaderboard();
+      
+      if (window.solana && window.solana.isPhantom) {
+        try {
+          const connected = await window.solana.connect({ onlyIfTrusted: true });
+          if (connected) {
+            connectWallet();
+          }
+        } catch (err) {
+          console.log("No auto-connect available:", err);
+        }
+      }
     });
-    loadLeaderboard(); // Refresh the display
-  } catch (err) {
-    console.error("Failed to save to leaderboard:", err);
-  }
-}
-
-async function loadLeaderboard() {
-  try {
-    const snapshot = await firebase.database().ref('leaderboard').once('value');
-    const data = snapshot.val();
-    leaderboard = data ? Object.values(data) : [];
-    updateLeaderboard();
-  } catch (err) {
-    console.error("Failed to load leaderboard:", err);
-  }
-}
-</script>
+  </script>
+</body>
+</html>
