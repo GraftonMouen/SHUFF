@@ -6,9 +6,193 @@
   <title>Solana Golf Game ($SHUFF) - Par 3</title>
   <script src="https://unpkg.com/@solana/web3.js@1.73.0/lib/index.iife.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.3.9/dist/browser/index.iife.min.js"></script>
+  <script src="https://unpkg.com/@project-serum/anchor@0.24.2/dist/anchor.min.js"></script>
   <style>
-    /* [Previous CSS remains exactly the same] */
-    /* ... */
+    body { 
+      font-family: 'Arial', sans-serif;
+      background: #f0f8ff;
+      color: #333;
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+    }
+    
+    .game-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+      font-size: clamp(1.5rem, 3vw, 2rem);
+    }
+    
+    #game-canvas {
+      background: #87CEEB;
+      border-radius: 8px;
+      margin: 20px auto;
+      display: block;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      width: 100%;
+      max-width: 800px;
+      height: auto;
+      aspect-ratio: 2/1;
+    }
+    
+    #wallet-info {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      text-align: left;
+    }
+    
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+      flex: 1 0 auto;
+      min-width: 120px;
+    }
+    
+    button:hover {
+      background: #2980b9;
+    }
+    
+    button:disabled {
+      background: #95a5a6;
+      cursor: not-allowed;
+    }
+    
+    #swing-input-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+      margin: 15px 0;
+    }
+    
+    input {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 16px;
+      min-width: 200px;
+      flex: 1 0 auto;
+    }
+    
+    #status {
+      margin: 15px 0;
+      min-height: 20px;
+      color: #e74c3c;
+      font-weight: bold;
+    }
+    
+    #game-info {
+      margin: 15px 0;
+      padding: 10px;
+      background: #ecf0f1;
+      border-radius: 5px;
+    }
+    
+    #loading-spinner {
+      margin: 20px 0;
+    }
+    
+    .spinner {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    #leaderboard {
+      background: #ecf0f1;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    
+    #leaderboard-list {
+      list-style: none;
+      padding: 0;
+      text-align: left;
+    }
+    
+    #leaderboard-list li {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    #leaderboard-list li:last-child {
+      border-bottom: none;
+    }
+    
+    .tx-link {
+      color: #3498db;
+      text-decoration: none;
+    }
+    
+    .tx-link:hover {
+      text-decoration: underline;
+    }
+    
+    #leaderboard-timeleft {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    
+    #prize-pool {
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    
+    @media (max-width: 600px) {
+      .button-group {
+        flex-direction: column;
+      }
+      
+      button {
+        width: 100%;
+      }
+      
+      #swing-input-container {
+        flex-direction: column;
+      }
+      
+      input {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -63,6 +247,8 @@
     const HOLE_IN_ONE_CHANCE = 1 / 10000;
     const PIXELS_TO_FEET = 0.3;
     const MONTHLY_PRIZE_PERCENTAGE = 0.20; // 20%
+    const PROGRAM_ID = new solanaWeb3.PublicKey("YOUR_PROGRAM_ID"); // Replace with your deployed program ID
+    const VAULT_ACCOUNT = new solanaWeb3.PublicKey("YOUR_VAULT_ACCOUNT"); // Replace with your vault account
     
     // Game State
     let walletAddress = null;
@@ -70,6 +256,9 @@
     let connection = null;
     let animationFrameId = null;
     let lastTransactionSignature = null;
+    let leaderboardAccount = null;
+    let program = null;
+    
     let gameState = {
       ballPosition: { x: 50, y: 300 },
       ballVelocity: { x: 0, y: 0 },
@@ -93,7 +282,7 @@
     let leaderboard = [];
     let prizePool = 0;
     let seasonEndDate = new Date();
-    seasonEndDate.setMonth(seasonEndDate.getMonth() + 1); // Set to end next month
+    seasonEndDate.setMonth(seasonEndDate.getMonth() + 1);
     
     // DOM Elements
     const connectBtn = document.getElementById('connect-wallet-btn');
@@ -124,125 +313,288 @@
       drawGame();
     }
 
-    // [Previous drawGame() function remains the same]
-    // ...
-
-    // Update Leaderboard Display
-    function updateLeaderboard() {
-      leaderboardList.innerHTML = '';
+    // Draw Game Elements
+    function drawGame() {
+      // Clear canvas
+      ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
       
-      // Sort by distance (closest first)
-      const sortedLeaderboard = [...leaderboard].sort((a, b) => a.distance - b.distance);
+      // Draw sky
+      ctx.fillStyle = '#87CEEB';
+      ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
       
-      sortedLeaderboard.forEach((entry, index) => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-          <span>${index + 1}. ${entry.wallet.substring(0, 4)}...${entry.wallet.substring(entry.wallet.length - 4)}</span>
-          <span>${Math.round(entry.distance)} ft</span>
-        `;
-        leaderboardList.appendChild(li);
-      });
+      // Draw ground
+      ctx.fillStyle = '#4CAF50';
+      ctx.fillRect(0, 300, gameCanvas.width, gameCanvas.height - 300);
       
-      updateTimeRemaining();
+      // Draw fairway (light green path)
+      ctx.fillStyle = '#2E8B57';
+      ctx.beginPath();
+      ctx.moveTo(50, 300);
+      ctx.bezierCurveTo(200, 290, 400, 290, 650, 300);
+      ctx.bezierCurveTo(750, 310, 750, 310, 650, 320);
+      ctx.bezierCurveTo(400, 330, 200, 330, 50, 320);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Draw rough (darker green outside fairway)
+      ctx.fillStyle = '#3CB371';
+      ctx.beginPath();
+      ctx.moveTo(0, 300);
+      ctx.lineTo(0, 400);
+      ctx.lineTo(800, 400);
+      ctx.lineTo(800, 300);
+      ctx.bezierCurveTo(750, 310, 650, 310, 650, 300);
+      ctx.bezierCurveTo(650, 290, 750, 290, 800, 300);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Draw green
+      ctx.fillStyle = '#7CFC00';
+      ctx.beginPath();
+      ctx.arc(gameState.holePosition.x, gameState.holePosition.y, 50, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Draw hole
+      ctx.fillStyle = 'black';
+      ctx.beginPath();
+      ctx.arc(gameState.holePosition.x, gameState.holePosition.y, gameState.holeRadius, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Draw flag
+      ctx.fillStyle = 'red';
+      ctx.fillRect(gameState.holePosition.x - 2, gameState.holePosition.y - 40, 4, 40);
+      ctx.beginPath();
+      ctx.moveTo(gameState.holePosition.x, gameState.holePosition.y - 40);
+      ctx.lineTo(gameState.holePosition.x + 15, gameState.holePosition.y - 30);
+      ctx.lineTo(gameState.holePosition.x, gameState.holePosition.y - 20);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Draw water hazard (left of green)
+      ctx.fillStyle = '#1E90FF';
+      ctx.beginPath();
+      ctx.moveTo(580, 320);
+      ctx.bezierCurveTo(620, 310, 650, 320, 680, 330);
+      ctx.lineTo(680, 350);
+      ctx.lineTo(580, 350);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Draw sand bunker (right of green)
+      ctx.fillStyle = '#F5DEB3';
+      ctx.beginPath();
+      ctx.arc(750, 280, 30, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Draw ball
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      ctx.arc(gameState.ballPosition.x, gameState.ballPosition.y, gameState.ballRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'black';
+      ctx.stroke();
+      
+      // Update distance display
+      updateDistanceDisplay();
     }
 
-    // Update Time Remaining Display
-    function updateTimeRemaining() {
-      const now = new Date();
-      const diff = seasonEndDate - now;
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      timeRemainingSpan.textContent = `${days} days`;
-      
-      // Update prize pool display
-      prizeAmountSpan.textContent = prizePool.toFixed(2);
-      
-      // Check if season ended
-      if (diff <= 0) {
-        distributePrizes();
+    // Update distance display
+    function updateDistanceDisplay() {
+      const dx = gameState.ballPosition.x - gameState.holePosition.x;
+      const dy = gameState.ballPosition.y - gameState.holePosition.y;
+      const distance = Math.sqrt(dx * dx + dy * dy) * PIXELS_TO_FEET;
+      distanceToHoleSpan.textContent = Math.round(distance);
+    }
+
+    // Initialize Connection
+    async function initializeConnection() {
+      try {
+        connection = new solanaWeb3.Connection(
+          solanaWeb3.clusterApiUrl('mainnet-beta'),
+          'confirmed'
+        );
+        await connection.getEpochInfo();
+        return true;
+      } catch (err) {
+        console.error("Connection error:", err);
+        statusDiv.textContent = "Error connecting to Solana network. Please refresh.";
+        statusDiv.style.color = "#e74c3c";
+        return false;
       }
     }
 
-    // Distribute Prizes at Season End
-    async function distributePrizes() {
-      if (leaderboard.length === 0) return;
-      
-      const winner = leaderboard.reduce((prev, current) => 
-        (prev.distance < current.distance) ? prev : current
-      );
-      
-      const prizeAmount = prizePool * MONTHLY_PRIZE_PERCENTAGE;
-      
+    // Get SHUFF Token Balance
+    async function getShuffBalance(publicKey) {
       try {
-        // In a real implementation, you would send the prize here
-        // This is just a simulation for demonstration
-        statusDiv.textContent = `Season ended! ${winner.wallet.substring(0, 4)}...${winner.wallet.substring(winner.wallet.length - 4)} won ${prizeAmount.toFixed(2)} SHUFF!`;
+        const tokenAccount = await splToken.getAssociatedTokenAddress(
+          shuffMint,
+          publicKey
+        );
+        const accountInfo = await connection.getAccountInfo(tokenAccount);
+        if (!accountInfo) return 0;
+        
+        const token = new splToken.Token(
+          connection,
+          shuffMint,
+          solanaWeb3.TOKEN_PROGRAM_ID,
+          null
+        );
+        
+        const tokenAccountInfo = await token.getAccountInfo(tokenAccount);
+        const balance = tokenAccountInfo.amount / Math.pow(10, SHUFF_DECIMALS);
+        return balance.toFixed(2);
+      } catch (err) {
+        console.error("Balance check error:", err);
+        return 0;
+      }
+    }
+
+    // Connect Wallet
+    async function connectWallet() {
+      try {
+        connectBtn.disabled = true;
+        statusDiv.textContent = "Connecting to wallet...";
+        
+        if (!window.solana || !window.solana.isPhantom) {
+          statusDiv.textContent = "Phantom Wallet not installed!";
+          statusDiv.style.color = "#e74c3c";
+          window.open('https://phantom.app/', '_blank');
+          connectBtn.disabled = false;
+          return;
+        }
+        
+        if (!connection) {
+          const connected = await initializeConnection();
+          if (!connected) {
+            connectBtn.disabled = false;
+            return;
+          }
+        }
+        
+        const response = await window.solana.connect();
+        walletPublicKey = response.publicKey;
+        walletAddress = walletPublicKey.toString();
+        
+        walletAddressSpan.textContent = `${walletAddress.substring(0, 4)}...${walletAddress.substring(walletAddress.length - 4)}`;
+        document.getElementById('wallet-info').style.display = 'block';
+        
+        const balance = await getShuffBalance(walletPublicKey);
+        walletBalanceSpan.textContent = balance;
+        
+        newGameBtn.disabled = false;
+        swingBtn.disabled = false;
+        disconnectBtn.disabled = false;
+        
+        statusDiv.textContent = "Wallet connected successfully!";
         statusDiv.style.color = "#2ecc71";
         
-        // Reset for new season
-        leaderboard = [];
-        prizePool = 0;
-        seasonEndDate = new Date();
-        seasonEndDate.setMonth(seasonEndDate.getMonth() + 1);
-        updateLeaderboard();
+        await initializeProgram();
+        await checkExistingGame();
         
       } catch (err) {
-        console.error("Prize distribution error:", err);
-        statusDiv.textContent = "Error distributing prizes";
+        console.error("Wallet connection error:", err);
+        statusDiv.textContent = `Connection failed: ${err.message}`;
+        statusDiv.style.color = "#e74c3c";
+        connectBtn.disabled = false;
+      }
+    }
+
+    // Initialize Anchor Program
+    async function initializeProgram() {
+      try {
+        const provider = new anchor.Provider(
+          connection,
+          window.solana,
+          anchor.Provider.defaultOptions()
+        );
+        anchor.setProvider(provider);
+        
+        // Load program
+        const idl = await anchor.Program.fetchIdl(PROGRAM_ID, provider);
+        program = new anchor.Program(idl, PROGRAM_ID, provider);
+        
+        // Load leaderboard account
+        leaderboardAccount = await getLeaderboardAccount();
+        
+      } catch (err) {
+        console.error("Program initialization error:", err);
+        statusDiv.textContent = "Error initializing game program";
         statusDiv.style.color = "#e74c3c";
       }
     }
 
-    // Add Player to Leaderboard
-    function addToLeaderboard(wallet, distance) {
-      // Check if player already exists
-      const existingIndex = leaderboard.findIndex(entry => entry.wallet === wallet);
-      
-      if (existingIndex >= 0) {
-        // Update if new distance is better
-        if (distance < leaderboard[existingIndex].distance) {
-          leaderboard[existingIndex].distance = distance;
-        }
-      } else {
-        // Add new entry
-        leaderboard.push({
-          wallet,
-          distance,
-          timestamp: Date.now()
-        });
-      }
-      
-      updateLeaderboard();
-      
-      // Save to localStorage
-      localStorage.setItem('golfLeaderboard', JSON.stringify({
-        leaderboard,
-        prizePool,
-        seasonEndDate: seasonEndDate.getTime()
-      }));
-    }
-
-    // Load Leaderboard from Storage
-    function loadLeaderboard() {
-      const savedData = localStorage.getItem('golfLeaderboard');
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        leaderboard = data.leaderboard || [];
-        prizePool = data.prizePool || 0;
-        seasonEndDate = new Date(data.seasonEndDate || Date.now());
-        
-        // If season ended, start new one
-        if (seasonEndDate < new Date()) {
-          seasonEndDate = new Date();
-          seasonEndDate.setMonth(seasonEndDate.getMonth() + 1);
-        }
-        
-        updateLeaderboard();
+    // Get Leaderboard Account
+    async function getLeaderboardAccount() {
+      try {
+        const account = await program.account.golfLeaderboard.fetch(VAULT_ACCOUNT);
+        return account;
+      } catch (err) {
+        console.error("Leaderboard account error:", err);
+        return null;
       }
     }
 
-    // [Previous initializeConnection(), getShuffBalance(), connectWallet(), disconnectWallet() functions remain the same]
-    // ...
+    // Disconnect Wallet
+    async function disconnectWallet() {
+      try {
+        if (window.solana && window.solana.disconnect) {
+          await window.solana.disconnect();
+        }
+        
+        walletAddress = null;
+        walletPublicKey = null;
+        
+        document.getElementById('wallet-info').style.display = 'none';
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+        newGameBtn.disabled = true;
+        swingBtn.disabled = true;
+        
+        statusDiv.textContent = "Wallet disconnected";
+        statusDiv.style.color = "#3498db";
+      } catch (err) {
+        console.error("Disconnection error:", err);
+        statusDiv.textContent = "Error disconnecting wallet";
+        statusDiv.style.color = "#e74c3c";
+      }
+    }
 
+    // Check for existing game
+    async function checkExistingGame() {
+      initializeGame();
+    }
+
+    // Initialize New Game
+    function initializeGame() {
+      gameState = {
+        ballPosition: { x: 50, y: 300 },
+        ballVelocity: { x: 0, y: 0 },
+        isMoving: false,
+        strokes: 0,
+        lastSwingAmount: 0,
+        holePosition: { x: 700, y: 300 },
+        holeRadius: 8,
+        ballRadius: 8,
+        hazards: {
+          water: [
+            { x: 580, y: 320, width: 100, height: 30 }
+          ],
+          sand: [
+            { x: 750, y: 280, radius: 30 }
+          ]
+        },
+        gameActive: true,
+        disqualified: false,
+        canvasWidth: 800,
+        canvasHeight: 400
+      };
+      
+      strokeCountSpan.textContent = "0";
+      gameStatusSpan.textContent = "Game in progress";
+      drawGame();
+    }
+
+    // Make Swing with Real Transactions
     async function makeSwing() {
       const swingAmount = parseFloat(swingAmountInput.value);
       
@@ -257,30 +609,23 @@
         swingBtn.disabled = true;
         statusDiv.textContent = "Preparing transaction...";
         
-        // In a real implementation, you would:
-        // 1. Create actual transaction to transfer SHUFF to game vault
-        // 2. Add to prize pool
-        // For this demo, we'll simulate it
+        // 1. Transfer SHUFF to game vault
+        const transferTx = await transferShuffToVault(swingAmount);
         
-        // Simulate transaction processing
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Update game state
-        gameState.strokes++;
-        gameState.lastSwingAmount = swingAmount;
-        strokeCountSpan.textContent = gameState.strokes;
-        
-        // Add to prize pool (20% goes to winner, 80% to game)
-        prizePool += swingAmount;
-        updateLeaderboard();
-        
-        // Calculate swing power
-        const power = swingAmount * 0.5;
-        
-        // Calculate direction to hole
+        // 2. Calculate final distance
         const dx = gameState.holePosition.x - gameState.ballPosition.x;
         const dy = gameState.holePosition.y - gameState.ballPosition.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
+        const distance = Math.sqrt(dx * dx + dy * dy) * PIXELS_TO_FEET;
+        
+        // 3. Add to on-chain leaderboard
+        await addLeaderboardEntry(Math.round(distance), swingAmount);
+        
+        // 4. Update game state
+        gameState.strokes++;
+        strokeCountSpan.textContent = gameState.strokes;
+        
+        // 5. Calculate swing physics
+        const power = swingAmount * 0.5;
         const directionNoise = (Math.random() - 0.5) * 0.2;
         
         gameState.ballVelocity = {
@@ -291,21 +636,21 @@
         gameState.isMoving = true;
         gameStatusSpan.textContent = "Ball in motion...";
         
-        // Start animation
-        animateBall();
-        
-        // Simulate transaction (in real app, use actual tx hash)
-        lastTransactionSignature = "simulated_tx_" + Math.random().toString(36).substring(2);
+        // 6. Show transaction link
+        lastTransactionSignature = transferTx;
         lastTxInfo.style.display = 'block';
-        lastTxLink.href = `https://solscan.io/tx/${lastTransactionSignature}`;
-        lastTxLink.textContent = "View simulated transaction";
+        lastTxLink.href = `https://solscan.io/tx/${transferTx}`;
+        lastTxLink.textContent = "View transaction";
         
         statusDiv.textContent = `Swing successful with ${swingAmount} SHUFF!`;
         statusDiv.style.color = "#2ecc71";
         
+        // Start animation
+        animateBall();
+        
       } catch (err) {
         console.error("Swing error:", err);
-        statusDiv.textContent = `Swing failed: ${err.message}`;
+        statusDiv.textContent = `Transaction failed: ${err.message}`;
         statusDiv.style.color = "#e74c3c";
       } finally {
         loadingSpinner.style.display = 'none';
@@ -313,45 +658,204 @@
       }
     }
 
-    // [Previous animateBall() function remains the same]
-    // ...
-
-    // Modified checkCollisions() to add to leaderboard when ball stops
-    function checkCollisions() {
-      // [Previous collision checks remain the same]
-      // ...
+    // Transfer SHUFF to Vault
+    async function transferShuffToVault(amount) {
+      const tokenAccount = await splToken.getAssociatedTokenAddress(
+        shuffMint,
+        walletPublicKey
+      );
       
-      // When ball stops
+      const transaction = new solanaWeb3.Transaction().add(
+        splToken.Token.createTransferInstruction(
+          splToken.TOKEN_PROGRAM_ID,
+          tokenAccount,
+          VAULT_ACCOUNT,
+          walletPublicKey,
+          [],
+          amount * Math.pow(10, SHUFF_DECIMALS))
+      );
+      
+      const signed = await window.solana.signTransaction(transaction);
+      const tx = await connection.sendRawTransaction(signed.serialize());
+      await connection.confirmTransaction(tx);
+      
+      return tx;
+    }
+
+    // Add Entry to Leaderboard
+    async function addLeaderboardEntry(distance, amount) {
+      try {
+        const tx = await program.rpc.addEntry(
+          new anchor.BN(distance),
+          new anchor.BN(amount * Math.pow(10, SHUFF_DECIMALS)),
+          {
+            accounts: {
+              leaderboard: VAULT_ACCOUNT,
+              player: walletPublicKey,
+            },
+          }
+        );
+        
+        console.log("Entry added:", tx);
+        await updateLeaderboardFromChain();
+        return true;
+      } catch (err) {
+        console.error("Add entry error:", err);
+        return false;
+      }
+    }
+
+    // Update Leaderboard from Chain
+    async function updateLeaderboardFromChain() {
+      try {
+        const account = await program.account.golfLeaderboard.fetch(VAULT_ACCOUNT);
+        
+        // Update UI
+        leaderboardList.innerHTML = '';
+        
+        // Sort entries by distance (closest first)
+        const sortedEntries = [...account.entries].sort((a, b) => a.distance - b.distance);
+        
+        sortedEntries.forEach((entry, index) => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <span>${index + 1}. ${entry.player.toString().substring(0, 4)}...${entry.player.toString().substring(entry.player.toString().length - 4)}</span>
+            <span>${entry.distance} ft</span>
+          `;
+          leaderboardList.appendChild(li);
+        });
+        
+        // Update prize pool and time remaining
+        prizePool = account.prizePool / Math.pow(10, SHUFF_DECIMALS);
+        prizeAmountSpan.textContent = prizePool.toFixed(2);
+        
+        const now = new Date();
+        const seasonEnd = new Date(account.seasonEnd * 1000);
+        const diff = seasonEnd - now;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        timeRemainingSpan.textContent = `${days} days`;
+        
+        // Check if season ended
+        if (diff <= 0) {
+          await distributePrizes();
+        }
+        
+      } catch (err) {
+        console.error("Update leaderboard error:", err);
+      }
+    }
+
+    // Distribute Prizes
+    async function distributePrizes() {
+      try {
+        const tx = await program.rpc.distributePrizes({
+          accounts: {
+            leaderboard: VAULT_ACCOUNT,
+            admin: walletPublicKey,
+          },
+        });
+        
+        console.log("Prizes distributed:", tx);
+        statusDiv.textContent = "Prizes distributed for this season!";
+        statusDiv.style.color = "#2ecc71";
+        
+        await updateLeaderboardFromChain();
+        
+      } catch (err) {
+        console.error("Prize distribution error:", err);
+        statusDiv.textContent = "Error distributing prizes";
+        statusDiv.style.color = "#e74c3c";
+      }
+    }
+
+    // Animate Ball Movement
+    function animateBall() {
+      if (!gameState.isMoving) return;
+      
+      // Apply physics
+      gameState.ballVelocity.x *= 0.98;
+      gameState.ballVelocity.y *= 0.98;
+      
+      // Update position
+      gameState.ballPosition.x += gameState.ballVelocity.x;
+      gameState.ballPosition.y += gameState.ballVelocity.y;
+      
+      // Check for collisions
+      checkCollisions();
+      
+      // Redraw game
+      drawGame();
+      
+      // Check if ball stopped
       const speed = Math.sqrt(
         gameState.ballVelocity.x * gameState.ballVelocity.x +
         gameState.ballVelocity.y * gameState.ballVelocity.y
       );
       
-      if (speed < 0.5 && gameState.isMoving) {
+      if (speed < 0.5) {
         gameState.isMoving = false;
         gameStatusSpan.textContent = "Ball at rest";
         
-        // Calculate final distance
+        // Check if ball is in hole
         const dx = gameState.ballPosition.x - gameState.holePosition.x;
         const dy = gameState.ballPosition.y - gameState.holePosition.y;
-        const distance = Math.sqrt(dx * dx + dy * dy) * PIXELS_TO_FEET;
+        const distance = Math.sqrt(dx * dx + dy * dy);
         
-        // Add to leaderboard
-        if (walletAddress && !gameState.disqualified) {
-          addToLeaderboard(walletAddress, distance);
-        }
-        
-        // Check for hole in one
         if (distance < gameState.holeRadius + gameState.ballRadius) {
           gameStatusSpan.textContent = "Hole in one!";
         }
+      } else {
+        animationFrameId = requestAnimationFrame(animateBall);
       }
+    }
+
+    // Check Collisions
+    function checkCollisions() {
+      // Check water hazard
+      for (const water of gameState.hazards.water) {
+        if (isPointInEllipse(gameState.ballPosition, water)) {
+          gameStatusSpan.textContent = "Ball in water hazard - Disqualified!";
+          gameState.disqualified = true;
+          gameState.gameActive = false;
+          cancelAnimationFrame(animationFrameId);
+          return;
+        }
+      }
+      
+      // Check sand bunkers
+      for (const sand of gameState.hazards.sand) {
+        const dx = gameState.ballPosition.x - sand.x;
+        const dy = gameState.ballPosition.y - sand.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < sand.radius) {
+          // Apply sand resistance
+          gameState.ballVelocity.x *= 0.9;
+          gameState.ballVelocity.y *= 0.9;
+        }
+      }
+      
+      // Check boundaries
+      if (gameState.ballPosition.x < gameState.ballRadius || 
+          gameState.ballPosition.x > gameState.canvasWidth - gameState.ballRadius ||
+          gameState.ballPosition.y < gameState.ballRadius || 
+          gameState.ballPosition.y > gameState.canvasHeight - gameState.ballRadius) {
+        gameState.ballVelocity.x = -gameState.ballVelocity.x * 0.5;
+        gameState.ballVelocity.y = -gameState.ballVelocity.y * 0.5;
+      }
+    }
+
+    // Helper function to check if point is in ellipse
+    function isPointInEllipse(point, ellipse) {
+      const dx = point.x - (ellipse.x + ellipse.width/2);
+      const dy = point.y - (ellipse.y + ellipse.height/2);
+      return (dx*dx)/(ellipse.width*ellipse.width/4) + 
+             (dy*dy)/(ellipse.height*ellipse.height/4) <= 1;
     }
 
     // Initialize on load
     window.addEventListener('load', async () => {
       initializeCanvas();
-      loadLeaderboard();
       
       if (window.solana && window.solana.isPhantom) {
         try {
