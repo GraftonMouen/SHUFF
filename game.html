@@ -32,7 +32,7 @@
     }
     
     #game-canvas {
-      background: #2ecc71;
+      background: #87CEEB; /* Sky blue */
       border-radius: 8px;
       margin: 20px auto;
       display: block;
@@ -241,13 +241,13 @@
     let animationFrameId = null;
     let lastTransactionSignature = null;
     let gameState = {
-      ballPosition: { x: 50, y: 200 },
+      ballPosition: { x: 50, y: 300 },
       ballVelocity: { x: 0, y: 0 },
       isMoving: false,
       strokes: 0,
       lastSwingAmount: 0,
-      holePosition: { x: 700, y: 200 },
-      holeRadius: 5,
+      holePosition: { x: 700, y: 300 },
+      holeRadius: 8,
       ballRadius: 8,
       terrain: [],
       hazards: {
@@ -289,128 +289,96 @@
       drawGame();
     }
 
-    // Draw Game Elements with improved realism
+    // Draw Game Elements - Professional 2D Design
     function drawGame() {
       // Clear canvas
       ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
       
-      // Draw sky gradient
-      const skyGradient = ctx.createLinearGradient(0, 0, 0, gameCanvas.height);
-      skyGradient.addColorStop(0, '#87CEEB');
-      skyGradient.addColorStop(1, '#E0F7FA');
-      ctx.fillStyle = skyGradient;
+      // Draw sky
+      ctx.fillStyle = '#87CEEB';
       ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
       
-      // Draw distant trees/hills
+      // Draw ground (extends to bottom)
+      ctx.fillStyle = '#4CAF50';
+      ctx.fillRect(0, 250, gameCanvas.width, gameCanvas.height - 250);
+      
+      // Draw fairway (path to green)
       ctx.fillStyle = '#2E8B57';
       ctx.beginPath();
-      ctx.moveTo(0, 300);
-      ctx.bezierCurveTo(100, 250, 200, 270, 300, 260);
-      ctx.bezierCurveTo(400, 250, 500, 270, 600, 260);
-      ctx.bezierCurveTo(700, 250, 800, 270, 800, 300);
+      ctx.moveTo(50, 300);
+      ctx.bezierCurveTo(200, 290, 400, 290, 650, 300);
+      ctx.bezierCurveTo(750, 310, 750, 310, 650, 320);
+      ctx.bezierCurveTo(400, 330, 200, 330, 50, 320);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Draw rough (outside fairway)
+      ctx.fillStyle = '#3CB371';
+      ctx.beginPath();
+      ctx.moveTo(0, 250);
+      ctx.lineTo(0, 400);
+      ctx.lineTo(800, 400);
+      ctx.lineTo(800, 250);
+      ctx.bezierCurveTo(750, 270, 650, 280, 650, 300);
+      ctx.bezierCurveTo(650, 320, 750, 330, 800, 350);
       ctx.lineTo(800, 400);
       ctx.lineTo(0, 400);
       ctx.closePath();
       ctx.fill();
       
-      // Draw fairway with depth
-      const fairwayGradient = ctx.createLinearGradient(0, 150, 0, 250);
-      fairwayGradient.addColorStop(0, '#4CAF50');
-      fairwayGradient.addColorStop(1, '#2E7D32');
-      ctx.fillStyle = fairwayGradient;
+      // Draw green (flat circle)
+      ctx.fillStyle = '#7CFC00';
       ctx.beginPath();
-      ctx.moveTo(50, 200);
-      ctx.bezierCurveTo(200, 180, 400, 170, 650, 200);
-      ctx.bezierCurveTo(750, 210, 750, 210, 650, 230);
-      ctx.bezierCurveTo(400, 260, 200, 250, 50, 230);
-      ctx.closePath();
+      ctx.arc(gameState.holePosition.x, gameState.holePosition.y, 50, 0, Math.PI * 2);
       ctx.fill();
       
-      // Draw green with realistic shape and shading
-      const greenGradient = ctx.createRadialGradient(
-        gameState.holePosition.x, gameState.holePosition.y, 10,
-        gameState.holePosition.x, gameState.holePosition.y, 50
-      );
-      greenGradient.addColorStop(0, '#7CFC00');
-      greenGradient.addColorStop(1, '#228B22');
-      ctx.fillStyle = greenGradient;
-      ctx.beginPath();
-      ctx.ellipse(
-        gameState.holePosition.x, gameState.holePosition.y,
-        60, 40, Math.PI/4, 0, Math.PI * 2
-      );
-      ctx.fill();
-      
-      // Draw water hazard with realistic shape and shading
-      const waterGradient = ctx.createLinearGradient(550, 250, 700, 350);
-      waterGradient.addColorStop(0, '#1E90FF');
-      waterGradient.addColorStop(1, '#00BFFF');
-      ctx.fillStyle = waterGradient;
-      ctx.beginPath();
-      ctx.moveTo(550, 250);
-      ctx.bezierCurveTo(600, 230, 650, 240, 680, 260);
-      ctx.bezierCurveTo(700, 280, 700, 320, 650, 340);
-      ctx.bezierCurveTo(600, 350, 570, 330, 550, 300);
-      ctx.closePath();
-      ctx.fill();
-      
-      // Add water ripple effect
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-      ctx.lineWidth = 2;
-      for (let i = 0; i < 3; i++) {
-        ctx.beginPath();
-        ctx.ellipse(
-          600 + i * 20, 290 + i * 10,
-          30 + i * 10, 20 + i * 5,
-          Math.PI/4, 0, Math.PI * 2
-        );
-        ctx.stroke();
-      }
-      
-      // Draw sand bunker with realistic shape and shading
-      const sandGradient = ctx.createRadialGradient(750, 170, 0, 750, 170, 40);
-      sandGradient.addColorStop(0, '#F5DEB3');
-      sandGradient.addColorStop(1, '#D2B48C');
-      ctx.fillStyle = sandGradient;
-      ctx.beginPath();
-      ctx.ellipse(750, 170, 50, 30, Math.PI/6, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // Add sand texture
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-      for (let i = 0; i < 50; i++) {
-        const x = 750 + (Math.random() - 0.5) * 60;
-        const y = 170 + (Math.random() - 0.5) * 40;
-        const size = Math.random() * 3;
-        ctx.fillRect(x, y, size, size);
-      }
-      
-      // Draw hole with depth effect
-      ctx.fillStyle = '#000';
+      // Draw hole
+      ctx.fillStyle = 'black';
       ctx.beginPath();
       ctx.arc(gameState.holePosition.x, gameState.holePosition.y, gameState.holeRadius, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-      ctx.beginPath();
-      ctx.arc(gameState.holePosition.x, gameState.holePosition.y, gameState.holeRadius, Math.PI, Math.PI * 2);
-      ctx.fill();
       
       // Draw flag
-      ctx.fillStyle = '#FF0000';
-      ctx.fillRect(gameState.holePosition.x - 2, gameState.holePosition.y - 60, 4, 60);
+      ctx.fillStyle = 'red';
+      ctx.fillRect(gameState.holePosition.x - 2, gameState.holePosition.y - 40, 4, 40);
       ctx.beginPath();
-      ctx.moveTo(gameState.holePosition.x, gameState.holePosition.y - 60);
-      ctx.lineTo(gameState.holePosition.x + 20, gameState.holePosition.y - 50);
-      ctx.lineTo(gameState.holePosition.x, gameState.holePosition.y - 40);
+      ctx.moveTo(gameState.holePosition.x, gameState.holePosition.y - 40);
+      ctx.lineTo(gameState.holePosition.x + 15, gameState.holePosition.y - 30);
+      ctx.lineTo(gameState.holePosition.x, gameState.holePosition.y - 20);
       ctx.closePath();
       ctx.fill();
+      
+      // Draw water hazard (bottom left of green - not overlapping)
+      ctx.fillStyle = '#1E90FF';
+      ctx.beginPath();
+      ctx.moveTo(580, 320);
+      ctx.bezierCurveTo(620, 310, 650, 320, 680, 330);
+      ctx.lineTo(680, 350);
+      ctx.lineTo(580, 350);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Draw sand bunker (right of green - not overlapping)
+      ctx.fillStyle = '#F5DEB3';
+      ctx.beginPath();
+      ctx.arc(750, 280, 30, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Add sand texture
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      for (let i = 0; i < 30; i++) {
+        const x = 750 + (Math.random() - 0.5) * 40;
+        const y = 280 + (Math.random() - 0.5) * 30;
+        const size = Math.random() * 2 + 1;
+        ctx.fillRect(x, y, size, size);
+      }
       
       // Draw ball with shadow
       ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
       ctx.beginPath();
       ctx.ellipse(
-        gameState.ballPosition.x + 3, 
-        gameState.ballPosition.y + 3,
+        gameState.ballPosition.x + 2, 
+        gameState.ballPosition.y + 2,
         gameState.ballRadius, 
         gameState.ballRadius/2,
         0, 0, Math.PI * 2
@@ -421,24 +389,14 @@
       ctx.beginPath();
       ctx.arc(gameState.ballPosition.x, gameState.ballPosition.y, gameState.ballRadius, 0, Math.PI * 2);
       ctx.fill();
-      
-      // Add ball highlight
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-      ctx.beginPath();
-      ctx.arc(
-        gameState.ballPosition.x - gameState.ballRadius/3,
-        gameState.ballPosition.y - gameState.ballRadius/3,
-        gameState.ballRadius/3,
-        0, Math.PI * 2
-      );
-      ctx.fill();
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.stroke();
       
       // Update distance display
       updateDistanceDisplay();
     }
 
     // [Rest of your existing JavaScript functions remain exactly the same]
-    // Update distance display
     function updateDistanceDisplay() {
       const dx = gameState.ballPosition.x - gameState.holePosition.x;
       const dy = gameState.ballPosition.y - gameState.holePosition.y;
@@ -446,15 +404,12 @@
       distanceToHoleSpan.textContent = Math.round(distance);
     }
 
-    // Initialize Connection
     async function initializeConnection() {
       try {
         connection = new solanaWeb3.Connection(
           solanaWeb3.clusterApiUrl('mainnet-beta'),
           'confirmed'
         );
-        
-        // Test connection
         await connection.getEpochInfo();
         return true;
       } catch (err) {
@@ -465,27 +420,20 @@
       }
     }
 
-    // Get SHUFF Token Balance with proper decimal handling
     async function getShuffBalance(publicKey) {
       try {
         const tokenAccount = await splToken.getAssociatedTokenAddress(
           shuffMint,
           publicKey
         );
-        
-        // Check if token account exists
         const accountExists = await connection.getAccountInfo(tokenAccount);
         if (!accountExists) return 0;
-        
-        // Create token instance
         const token = new splToken.Token(
           connection,
           shuffMint,
           solanaWeb3.TOKEN_PROGRAM_ID,
           null
         );
-        
-        // Get token account info
         const tokenAccountInfo = await token.getAccountInfo(tokenAccount);
         const balance = tokenAccountInfo.amount / Math.pow(10, SHUFF_DECIMALS);
         return balance.toFixed(2);
@@ -495,13 +443,10 @@
       }
     }
 
-    // Connect Wallet
     async function connectWallet() {
       try {
         connectBtn.disabled = true;
         statusDiv.textContent = "Connecting to wallet...";
-        
-        // Check if Phantom is installed
         if (!window.solana || !window.solana.isPhantom) {
           statusDiv.textContent = "Phantom Wallet not installed!";
           statusDiv.style.color = "#e74c3c";
@@ -509,8 +454,6 @@
           connectBtn.disabled = false;
           return;
         }
-        
-        // Initialize connection if not already done
         if (!connection) {
           const connected = await initializeConnection();
           if (!connected) {
@@ -518,32 +461,19 @@
             return;
           }
         }
-        
-        // Connect to wallet
         const response = await window.solana.connect();
         walletPublicKey = response.publicKey;
         walletAddress = walletPublicKey.toString();
-        
-        // Update UI with wallet info
         walletAddressSpan.textContent = `${walletAddress.substring(0, 4)}...${walletAddress.substring(walletAddress.length - 4)}`;
         document.getElementById('wallet-info').style.display = 'block';
-        
-        // Get and display balance
         const balance = await getShuffBalance(walletPublicKey);
         walletBalanceSpan.textContent = balance;
-        
-        // Enable game controls
         newGameBtn.disabled = false;
         swingBtn.disabled = false;
         disconnectBtn.disabled = false;
-        
-        // Update status
         statusDiv.textContent = "Wallet connected successfully!";
         statusDiv.style.color = "#2ecc71";
-        
-        // Check for existing game state
         checkExistingGame();
-        
       } catch (err) {
         console.error("Wallet connection error:", err);
         statusDiv.textContent = `Connection failed: ${err.message}`;
@@ -552,27 +482,20 @@
       }
     }
 
-    // Disconnect Wallet
     async function disconnectWallet() {
       try {
         if (window.solana && window.solana.disconnect) {
           await window.solana.disconnect();
         }
-        
-        // Reset wallet state
         walletAddress = null;
         walletPublicKey = null;
-        
-        // Update UI
         document.getElementById('wallet-info').style.display = 'none';
         connectBtn.disabled = false;
         disconnectBtn.disabled = true;
         newGameBtn.disabled = true;
         swingBtn.disabled = true;
-        
         statusDiv.textContent = "Wallet disconnected";
         statusDiv.style.color = "#3498db";
-        
       } catch (err) {
         console.error("Disconnection error:", err);
         statusDiv.textContent = "Error disconnecting wallet";
@@ -580,31 +503,27 @@
       }
     }
 
-    // Check for existing game state
     async function checkExistingGame() {
-      // Implement logic to check for existing game state from blockchain
-      // For now, we'll just initialize a new game
       initializeGame();
     }
 
-    // Initialize New Game
     function initializeGame() {
       gameState = {
-        ballPosition: { x: 50, y: 200 },
+        ballPosition: { x: 50, y: 300 },
         ballVelocity: { x: 0, y: 0 },
         isMoving: false,
         strokes: 0,
         lastSwingAmount: 0,
-        holePosition: { x: 700, y: 200 },
-        holeRadius: 5,
+        holePosition: { x: 700, y: 300 },
+        holeRadius: 8,
         ballRadius: 8,
         terrain: [],
         hazards: {
           water: [
-            { x: 550, y: 250, width: 150, height: 100 } // Water to bottom left of green
+            { x: 580, y: 320, width: 100, height: 30 }
           ],
           sand: [
-            { x: 750, y: 170, radius: 40 } // Single sand bunker to right of green
+            { x: 750, y: 280, radius: 30 }
           ]
         },
         wind: { 
@@ -616,64 +535,43 @@
         canvasWidth: 800,
         canvasHeight: 400
       };
-      
       strokeCountSpan.textContent = "0";
       gameStatusSpan.textContent = "Game in progress";
       drawGame();
     }
 
-    // Handle Swing
     async function makeSwing() {
       const swingAmount = parseFloat(swingAmountInput.value);
-      
-      if (isNaN(swingAmount) || swingAmount < 0.1 || swingAmount > 100) {
+      if (isNaN(swingAmount) {
         statusDiv.textContent = "Please enter a valid SHUFF amount (0.1-100)";
         statusDiv.style.color = "#e74c3c";
         return;
       }
-      
       try {
         loadingSpinner.style.display = 'block';
         swingBtn.disabled = true;
         statusDiv.textContent = "Preparing swing...";
-        
-        // Simulate transaction processing
         await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Update game state
         gameState.strokes++;
         gameState.lastSwingAmount = swingAmount;
         strokeCountSpan.textContent = gameState.strokes;
-        
-        // Calculate swing power (based on SHUFF amount)
         const power = swingAmount * 0.5;
-        
-        // Calculate direction to hole (with some randomness)
         const dx = gameState.holePosition.x - gameState.ballPosition.x;
         const dy = gameState.holePosition.y - gameState.ballPosition.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         const directionNoise = (Math.random() - 0.5) * 0.2;
-        
         gameState.ballVelocity = {
           x: (dx / distance + directionNoise) * power,
           y: (dy / distance + directionNoise) * power
         };
-        
         gameState.isMoving = true;
         gameStatusSpan.textContent = "Ball in motion...";
-        
-        // Start ball movement animation
         animateBall();
-        
-        // Update status
         statusDiv.textContent = `Swing successful with ${swingAmount} SHUFF!`;
         statusDiv.style.color = "#2ecc71";
-        
-        // Simulate transaction signature
         lastTransactionSignature = "simulated_tx_signature_" + Math.random().toString(36).substring(2);
         lastTxInfo.style.display = 'block';
         lastTxLink.href = `https://solscan.io/tx/${lastTransactionSignature}`;
-        
       } catch (err) {
         console.error("Swing error:", err);
         statusDiv.textContent = `Swing failed: ${err.message}`;
@@ -684,54 +582,35 @@
       }
     }
 
-    // Animate Ball Movement
     function animateBall() {
       if (!gameState.isMoving) return;
-      
-      // Apply physics
-      gameState.ballVelocity.x *= 0.98; // Friction
+      gameState.ballVelocity.x *= 0.98;
       gameState.ballVelocity.y *= 0.98;
-      gameState.ballVelocity.x += gameState.wind.x * 0.1; // Wind effect
+      gameState.ballVelocity.x += gameState.wind.x * 0.1;
       gameState.ballVelocity.y += gameState.wind.y * 0.1;
-      
-      // Update position
       gameState.ballPosition.x += gameState.ballVelocity.x;
       gameState.ballPosition.y += gameState.ballVelocity.y;
-      
-      // Check for collisions
       checkCollisions();
-      
-      // Redraw game
       drawGame();
-      
-      // Check if ball stopped
       const speed = Math.sqrt(
         gameState.ballVelocity.x * gameState.ballVelocity.x +
         gameState.ballVelocity.y * gameState.ballVelocity.y
       );
-      
       if (speed < 0.5) {
         gameState.isMoving = false;
         gameStatusSpan.textContent = "Ball at rest";
-        
-        // Check if ball is in hole
         const dx = gameState.ballPosition.x - gameState.holePosition.x;
         const dy = gameState.ballPosition.y - gameState.holePosition.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        
         if (distance < gameState.holeRadius + gameState.ballRadius) {
           gameStatusSpan.textContent = "Hole in one!";
-          // Reward player or end game
         }
       } else {
-        // Continue animation
         animationFrameId = requestAnimationFrame(animateBall);
       }
     }
 
-    // Check Collisions with hazards
     function checkCollisions() {
-      // Check water hazard
       for (const water of gameState.hazards.water) {
         if (isPointInEllipse(gameState.ballPosition, water)) {
           gameStatusSpan.textContent = "Ball in water hazard - Disqualified!";
@@ -741,21 +620,15 @@
           return;
         }
       }
-      
-      // Check sand bunkers
       for (const sand of gameState.hazards.sand) {
         const dx = gameState.ballPosition.x - sand.x;
         const dy = gameState.ballPosition.y - sand.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        
         if (distance < sand.radius) {
-          // Apply sand resistance
           gameState.ballVelocity.x *= 0.9;
           gameState.ballVelocity.y *= 0.9;
         }
       }
-      
-      // Check boundaries
       if (gameState.ballPosition.x < gameState.ballRadius || 
           gameState.ballPosition.x > gameState.canvasWidth - gameState.ballRadius ||
           gameState.ballPosition.y < gameState.ballRadius || 
@@ -765,9 +638,7 @@
       }
     }
 
-    // Helper function to check if point is in ellipse
     function isPointInEllipse(point, ellipse) {
-      // Simplified check for demo purposes
       const dx = point.x - (ellipse.x + ellipse.width/2);
       const dy = point.y - (ellipse.y + ellipse.height/2);
       return (dx*dx)/(ellipse.width*ellipse.width/4) + 
@@ -787,16 +658,12 @@
       }
     });
 
-    // Check if Phantom is available when page loads
     window.addEventListener('load', async () => {
       initializeCanvas();
-      
       if (window.solana && window.solana.isPhantom) {
-        // Phantom is installed, check for auto-connect
         try {
           const connected = await window.solana.connect({ onlyIfTrusted: true });
           if (connected) {
-            // Auto-connect if previously authorized
             connectWallet();
           }
         } catch (err) {
