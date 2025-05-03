@@ -279,6 +279,77 @@
     const strokeCountSpan = document.getElementById('stroke-count');
     const distanceToHoleSpan = document.getElementById('distance-to-hole');
     const gameStatusSpan = document.getElementById('game-status');
+    const gameCanvas = document.getElementById('game-canvas');
+    const ctx = gameCanvas.getContext('2d');
+
+    // Initialize Canvas
+    function initializeCanvas() {
+      gameCanvas.width = gameState.canvasWidth;
+      gameCanvas.height = gameState.canvasHeight;
+      drawGame();
+    }
+
+    // Draw Game Elements
+    function drawGame() {
+      // Clear canvas
+      ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+      
+      // Draw green background
+      ctx.fillStyle = '#2ecc71';
+      ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+      
+      // Draw fairway
+      ctx.fillStyle = '#27ae60';
+      ctx.beginPath();
+      ctx.moveTo(50, 150);
+      ctx.quadraticCurveTo(400, 50, 750, 150);
+      ctx.quadraticCurveTo(400, 350, 50, 150);
+      ctx.fill();
+      
+      // Draw water hazard
+      ctx.fillStyle = '#3498db';
+      ctx.beginPath();
+      ctx.moveTo(300, 100);
+      ctx.quadraticCurveTo(450, 150, 600, 100);
+      ctx.quadraticCurveTo(450, 300, 300, 100);
+      ctx.fill();
+      
+      // Draw sand bunkers
+      ctx.fillStyle = '#f1c40f';
+      // Left bunker
+      ctx.beginPath();
+      ctx.arc(200, 180, 30, 0, Math.PI * 2);
+      ctx.fill();
+      // Right bunker
+      ctx.beginPath();
+      ctx.arc(600, 220, 40, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Draw hole
+      ctx.fillStyle = 'black';
+      ctx.beginPath();
+      ctx.arc(gameState.holePosition.x, gameState.holePosition.y, gameState.holeRadius, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Draw ball
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      ctx.arc(gameState.ballPosition.x, gameState.ballPosition.y, gameState.ballRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'black';
+      ctx.stroke();
+      
+      // Update distance display
+      updateDistanceDisplay();
+    }
+
+    // Update distance display
+    function updateDistanceDisplay() {
+      const dx = gameState.ballPosition.x - gameState.holePosition.x;
+      const dy = gameState.ballPosition.y - gameState.holePosition.y;
+      const distance = Math.sqrt(dx * dx + dy * dy) * PIXELS_TO_FEET;
+      distanceToHoleSpan.textContent = Math.round(distance);
+    }
 
     // Initialize Connection
     async function initializeConnection() {
@@ -335,14 +406,22 @@
         connectBtn.disabled = true;
         statusDiv.textContent = "Connecting to wallet...";
         
+        // Check if Phantom is installed
         if (!window.solana || !window.solana.isPhantom) {
+          statusDiv.textContent = "Phantom Wallet not installed!";
+          statusDiv.style.color = "#e74c3c";
           window.open('https://phantom.app/', '_blank');
-          throw new Error("Phantom Wallet not installed! Redirecting...");
+          connectBtn.disabled = false;
+          return;
         }
         
+        // Initialize connection if not already done
         if (!connection) {
           const connected = await initializeConnection();
-          if (!connected) return;
+          if (!connected) {
+            connectBtn.disabled = false;
+            return;
+          }
         }
         
         // Connect to wallet
@@ -350,5 +429,287 @@
         walletPublicKey = response.publicKey;
         walletAddress = walletPublicKey.toString();
         
+        // Update UI with wallet info
+        walletAddressSpan.textContent = `${walletAddress.substring(0, 4)}...${walletAddress.substring(walletAddress.length - 4)}`;
+        document.getElementById('wallet-info').style.display = 'block';
+        
+        // Get and display balance
+        const balance = await getShuffBalance(walletPublicKey);
+        walletBalanceSpan.textContent = balance;
+        
+        // Enable game controls
+        newGameBtn.disabled = false;
+        swingBtn.disabled = false;
+        disconnectBtn.disabled = false;
+        
+        // Update status
+        statusDiv.textContent = "Wallet connected successfully!";
+        statusDiv.style.color = "#2ecc71";
+        
+        // Check for existing game state
+        checkExistingGame();
+        
+      } catch (err) {
+        console.error("Wallet connection error:", err);
+        statusDiv.textContent = `Connection failed: ${err.message}`;
+        statusDiv.style.color = "#e74c3c";
+        connectBtn.disabled = false;
+      }
+    }
+
+    // Disconnect Wallet
+    async function disconnectWallet() {
+      try {
+        if (window.solana && window.solana.disconnect) {
+          await window.solana.disconnect();
+        }
+        
+        // Reset wallet state
+        walletAddress = null;
+        walletPublicKey = null;
+        
         // Update UI
-       
+        document.getElementById('wallet-info').style.display = 'none';
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+        newGameBtn.disabled = true;
+        swingBtn.disabled = true;
+        
+        statusDiv.textContent = "Wallet disconnected";
+        statusDiv.style.color = "#3498db";
+        
+      } catch (err) {
+        console.error("Disconnection error:", err);
+        statusDiv.textContent = "Error disconnecting wallet";
+        statusDiv.style.color = "#e74c3c";
+      }
+    }
+
+    // Check for existing game state
+    async function checkExistingGame() {
+      // Implement logic to check for existing game state from blockchain
+      // For now, we'll just initialize a new game
+      initializeGame();
+    }
+
+    // Initialize New Game
+    function initializeGame() {
+      gameState = {
+        ballPosition: { x: 50, y: 200 },
+        ballVelocity: { x: 0, y: 0 },
+        isMoving: false,
+        strokes: 0,
+        lastSwingAmount: 0,
+        holePosition: { x: 740, y: 200 },
+        holeRadius: 5,
+        ballRadius: 8,
+        terrain: [],
+        hazards: {
+          water: [
+            { x: 300, y: 100, width: 300, height: 200 }
+          ],
+          sand: [
+            { x: 200, y: 180, radius: 30 },
+            { x: 600, y: 220, radius: 40 }
+          ]
+        },
+        wind: { 
+          x: (Math.random() - 0.5) * 0.5,
+          y: (Math.random() - 0.5) * 0.5 
+        },
+        gameActive: true,
+        disqualified: false,
+        canvasWidth: 800,
+        canvasHeight: 400
+      };
+      
+      strokeCountSpan.textContent = "0";
+      gameStatusSpan.textContent = "Game in progress";
+      drawGame();
+    }
+
+    // Handle Swing
+    async function makeSwing() {
+      const swingAmount = parseFloat(swingAmountInput.value);
+      
+      if (isNaN(swingAmount) || swingAmount < 0.1 || swingAmount > 100) {
+        statusDiv.textContent = "Please enter a valid SHUFF amount (0.1-100)";
+        statusDiv.style.color = "#e74c3c";
+        return;
+      }
+      
+      try {
+        loadingSpinner.style.display = 'block';
+        swingBtn.disabled = true;
+        statusDiv.textContent = "Preparing swing...";
+        
+        // Simulate transaction processing
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Update game state
+        gameState.strokes++;
+        gameState.lastSwingAmount = swingAmount;
+        strokeCountSpan.textContent = gameState.strokes;
+        
+        // Calculate swing power (based on SHUFF amount)
+        const power = swingAmount * 0.5;
+        
+        // Calculate direction to hole (with some randomness)
+        const dx = gameState.holePosition.x - gameState.ballPosition.x;
+        const dy = gameState.holePosition.y - gameState.ballPosition.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const directionNoise = (Math.random() - 0.5) * 0.2;
+        
+        gameState.ballVelocity = {
+          x: (dx / distance + directionNoise) * power,
+          y: (dy / distance + directionNoise) * power
+        };
+        
+        gameState.isMoving = true;
+        gameStatusSpan.textContent = "Ball in motion...";
+        
+        // Start ball movement animation
+        animateBall();
+        
+        // Update status
+        statusDiv.textContent = `Swing successful with ${swingAmount} SHUFF!`;
+        statusDiv.style.color = "#2ecc71";
+        
+        // Simulate transaction signature
+        lastTransactionSignature = "simulated_tx_signature_" + Math.random().toString(36).substring(2);
+        lastTxInfo.style.display = 'block';
+        lastTxLink.href = `https://solscan.io/tx/${lastTransactionSignature}`;
+        
+      } catch (err) {
+        console.error("Swing error:", err);
+        statusDiv.textContent = `Swing failed: ${err.message}`;
+        statusDiv.style.color = "#e74c3c";
+      } finally {
+        loadingSpinner.style.display = 'none';
+        swingBtn.disabled = false;
+      }
+    }
+
+    // Animate Ball Movement
+    function animateBall() {
+      if (!gameState.isMoving) return;
+      
+      // Apply physics
+      gameState.ballVelocity.x *= 0.98; // Friction
+      gameState.ballVelocity.y *= 0.98;
+      gameState.ballVelocity.x += gameState.wind.x * 0.1; // Wind effect
+      gameState.ballVelocity.y += gameState.wind.y * 0.1;
+      
+      // Update position
+      gameState.ballPosition.x += gameState.ballVelocity.x;
+      gameState.ballPosition.y += gameState.ballVelocity.y;
+      
+      // Check for collisions
+      checkCollisions();
+      
+      // Redraw game
+      drawGame();
+      
+      // Check if ball stopped
+      const speed = Math.sqrt(
+        gameState.ballVelocity.x * gameState.ballVelocity.x +
+        gameState.ballVelocity.y * gameState.ballVelocity.y
+      );
+      
+      if (speed < 0.5) {
+        gameState.isMoving = false;
+        gameStatusSpan.textContent = "Ball at rest";
+        
+        // Check if ball is in hole
+        const dx = gameState.ballPosition.x - gameState.holePosition.x;
+        const dy = gameState.ballPosition.y - gameState.holePosition.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < gameState.holeRadius + gameState.ballRadius) {
+          gameStatusSpan.textContent = "Hole in one!";
+          // Reward player or end game
+        }
+      } else {
+        // Continue animation
+        animationFrameId = requestAnimationFrame(animateBall);
+      }
+    }
+
+    // Check Collisions with hazards
+    function checkCollisions() {
+      // Check water hazard
+      for (const water of gameState.hazards.water) {
+        if (isPointInEllipse(gameState.ballPosition, water)) {
+          gameStatusSpan.textContent = "Ball in water hazard - Disqualified!";
+          gameState.disqualified = true;
+          gameState.gameActive = false;
+          cancelAnimationFrame(animationFrameId);
+          return;
+        }
+      }
+      
+      // Check sand bunkers
+      for (const sand of gameState.hazards.sand) {
+        const dx = gameState.ballPosition.x - sand.x;
+        const dy = gameState.ballPosition.y - sand.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < sand.radius) {
+          // Apply sand resistance
+          gameState.ballVelocity.x *= 0.9;
+          gameState.ballVelocity.y *= 0.9;
+        }
+      }
+      
+      // Check boundaries
+      if (gameState.ballPosition.x < gameState.ballRadius || 
+          gameState.ballPosition.x > gameState.canvasWidth - gameState.ballRadius ||
+          gameState.ballPosition.y < gameState.ballRadius || 
+          gameState.ballPosition.y > gameState.canvasHeight - gameState.ballRadius) {
+        gameState.ballVelocity.x = -gameState.ballVelocity.x * 0.5;
+        gameState.ballVelocity.y = -gameState.ballVelocity.y * 0.5;
+      }
+    }
+
+    // Helper function to check if point is in ellipse
+    function isPointInEllipse(point, ellipse) {
+      // Simplified check for demo purposes
+      const dx = point.x - (ellipse.x + ellipse.width/2);
+      const dy = point.y - (ellipse.y + ellipse.height/2);
+      return (dx*dx)/(ellipse.width*ellipse.width/4) + 
+             (dy*dy)/(ellipse.height*ellipse.height/4) <= 1;
+    }
+
+    // Event Listeners
+    connectBtn.addEventListener('click', connectWallet);
+    disconnectBtn.addEventListener('click', disconnectWallet);
+    newGameBtn.addEventListener('click', initializeGame);
+    swingBtn.addEventListener('click', makeSwing);
+    refreshBtn.addEventListener('click', () => {
+      if (walletPublicKey) {
+        getShuffBalance(walletPublicKey).then(balance => {
+          walletBalanceSpan.textContent = balance;
+        });
+      }
+    });
+
+    // Check if Phantom is available when page loads
+    window.addEventListener('load', async () => {
+      initializeCanvas();
+      
+      if (window.solana && window.solana.isPhantom) {
+        // Phantom is installed, check for auto-connect
+        try {
+          const connected = await window.solana.connect({ onlyIfTrusted: true });
+          if (connected) {
+            // Auto-connect if previously authorized
+            connectWallet();
+          }
+        } catch (err) {
+          console.log("No auto-connect available:", err);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
