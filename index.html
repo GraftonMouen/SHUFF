@@ -132,6 +132,8 @@
       max-width: 500px;
       margin: 2rem auto;
       padding: 1rem;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 12px;
     }
 
     .btn {
@@ -198,6 +200,34 @@
       text-decoration: none;
       border-radius: 5px;
       font-size: 1.2rem;
+    }
+
+    #how-to-buy {
+      background: rgba(0, 0, 0, 0.6);
+      padding: 2rem;
+      border-radius: 12px;
+    }
+
+    #how-to-buy ol {
+      padding-left: 1.5rem;
+    }
+
+    #how-to-buy li {
+      margin-bottom: 0.5rem;
+    }
+
+    .pump-link {
+      display: inline-block;
+      margin-top: 1rem;
+      color: #2ecc71;
+      text-decoration: none;
+      font-weight: bold;
+      transition: color 0.3s ease;
+    }
+
+    .pump-link:hover {
+      color: #27ae60;
+      text-decoration: underline;
     }
 
     @media (max-width: 768px) {
@@ -319,7 +349,7 @@
 
     <section id="tokenomics">
       <h2>Tokenomics</h2>
-      <div class="chart-container" style="width: 400px; height: 400px;">
+      <div class="chart-container">
         <canvas id="tokenomicsChart"></canvas>
       </div>
     </section>
@@ -337,6 +367,7 @@
         <li>Go to Pump.fun and search: <strong>Scottie Shuffler Coin</strong></li>
         <li>Contract Address: <code>GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump</code></li>
       </ol>
+      <a href="https://pump.fun/coin/GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump" class="pump-link" target="_blank">Get Early Access on Pump.fun →</a>
     </section>
 
     <section id="contact">
