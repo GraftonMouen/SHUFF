@@ -213,18 +213,8 @@
   </div>
 
   <script>
-    // Initialize SPL Token with robust fallback
-    const splToken = window.splToken || {
-      Token: solanaWeb3.SPLToken,
-      getAssociatedTokenAddress: solanaWeb3.SPLToken.getAssociatedTokenAddress,
-      createTransferInstruction: solanaWeb3.SPLToken.createTransferInstruction,
-      createAssociatedTokenAccountInstruction: solanaWeb3.SPLToken.createAssociatedTokenAccountInstruction
-    };
-    
     // Game Configuration
     const shuffMint = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump');
-    const treasuryWallet = new solanaWeb3.PublicKey('649fCzukZDSWwmhjQSAEJCyW6LXN8TDj5ytFxVtFv4ry');
-    const liquidityPoolWallet = new solanaWeb3.PublicKey('BAHjp9xTpndjiD8mAP9PABd1UP8HQMgZRTyhFm73WJDC');
     const SHUFF_DECIMALS = 9;
     
     // Game State
@@ -305,7 +295,8 @@
         statusDiv.textContent = "Connecting to wallet...";
         
         if (!window.solana || !window.solana.isPhantom) {
-          throw new Error("Phantom Wallet not installed!");
+          window.open('https://phantom.app/', '_blank');
+          throw new Error("Phantom Wallet not installed! Redirecting...");
         }
         
         if (!connection) {
@@ -313,31 +304,20 @@
           if (!connected) return;
         }
         
+        // Connect to wallet
         const response = await window.solana.connect();
         walletPublicKey = response.publicKey;
         walletAddress = walletPublicKey.toString();
         
+        // Update UI
         walletAddressSpan.textContent = `${walletAddress.slice(0,4)}...${walletAddress.slice(-4)}`;
         document.getElementById('wallet-info').style.display = 'block';
         swingBtn.disabled = false;
         connectBtn.textContent = "Wallet Connected";
         disconnectBtn.disabled = false;
         
-        // Get balance with debug logging
+        // Get balance
         const balance = await getShuffBalance(walletPublicKey);
-        console.log("SHUFF Balance:", balance);
-        
-        if (balance == 0) {
-          // Debug token account
-          const tokenAccount = await splToken.getAssociatedTokenAddress(
-            shuffMint,
-            walletPublicKey
-          );
-          console.log("Token account address:", tokenAccount.toString());
-          const exists = await connection.getAccountInfo(tokenAccount);
-          console.log("Account exists:", exists !== null);
-        }
-        
         walletBalanceSpan.textContent = balance;
         
         statusDiv.textContent = "Wallet connected successfully!";
@@ -353,9 +333,44 @@
       }
     }
 
-    // [Rest of your existing functions remain exactly the same...]
-    // (DisconnectWallet, estimateFees, sendTransaction, animateGolfBall, 
-    //  leaderboard functions, and event listeners all stay identical)
+    // Disconnect Wallet
+    async function disconnectWallet() {
+      try {
+        if (window.solana && window.solana.isPhantom) {
+          await window.solana.disconnect();
+        }
+        
+        walletAddress = null;
+        walletPublicKey = null;
+        
+        document.getElementById('wallet-info').style.display = 'none';
+        connectBtn.textContent = "Connect Phantom Wallet";
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+        swingBtn.disabled = true;
+        walletBalanceSpan.textContent = "0";
+        
+        statusDiv.textContent = "Wallet disconnected";
+        statusDiv.style.color = "#2ecc71";
+      } catch (err) {
+        console.error("Disconnection error:", err);
+        statusDiv.textContent = "Error disconnecting wallet";
+        statusDiv.style.color = "#e74c3c";
+      }
+    }
+
+    // Load Leaderboard (placeholder - implement your actual leaderboard logic)
+    async function loadLeaderboard() {
+      leaderboardList.innerHTML = "<li>Loading leaderboard...</li>";
+      // Implement your leaderboard fetching logic here
+      setTimeout(() => {
+        leaderboardList.innerHTML = `
+          <li>1. Player1 - Hole in 1! 🏆</li>
+          <li>2. Player2 - 2 strokes</li>
+          <li>3. Player3 - 3 strokes</li>
+        `;
+      }, 1000);
+    }
 
     // Event Listeners
     connectBtn.addEventListener('click', connectWallet);
@@ -372,13 +387,26 @@
         return;
       }
       
-      await sendTransaction(amount);
+      // Implement your swing logic here
+      statusDiv.textContent = `Swinging with ${amount} SHUFF...`;
+      statusDiv.style.color = "#3498db";
+      
+      // This is where you would implement the golf game mechanics
+      // For now, just show a message
+      setTimeout(() => {
+        statusDiv.textContent = "Swing complete! Implement game logic here.";
+        statusDiv.style.color = "#2ecc71";
+      }, 1500);
     });
     
     // Auto-connect if returning user
     window.addEventListener('load', async () => {
       try {
         if (window.solana && window.solana.isPhantom) {
+          // Initialize connection first
+          await initializeConnection();
+          
+          // Try silent connect
           const response = await window.solana.connect({ onlyIfTrusted: true });
           walletPublicKey = response.publicKey;
           walletAddress = walletPublicKey.toString();
@@ -397,27 +425,58 @@
       } catch (err) {
         console.log("Auto-connect skipped:", err);
       }
-      
-      // Initialize connection
-      if (!connection) {
-        try {
-          await initializeConnection();
-        } catch (err) {
-          console.error("Connection error:", err);
-        }
-      }
     });
     
-    // Handle window resize
-    window.addEventListener('resize', () => {
-      if (animationFrameId) {
-        const canvas = document.getElementById('game-canvas');
-        const displayWidth = Math.min(canvas.width, window.innerWidth - 40);
-        const displayHeight = displayWidth / 2;
-        canvas.style.width = `${displayWidth}px`;
-        canvas.style.height = `${displayHeight}px`;
-      }
+    // Initialize the canvas for the golf game
+    window.addEventListener('load', () => {
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Set canvas dimensions
+      canvas.width = 800;
+      canvas.height = 400;
+      
+      // Draw initial golf course
+      drawGolfCourse(ctx, canvas.width, canvas.height);
     });
+
+    // Draw golf course (placeholder)
+    function drawGolfCourse(ctx, width, height) {
+      // Green background
+      ctx.fillStyle = '#2ecc71';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Fairway
+      ctx.fillStyle = '#27ae60';
+      ctx.beginPath();
+      ctx.moveTo(50, height/2 - 50);
+      ctx.lineTo(width - 100, height/2 - 50);
+      ctx.lineTo(width - 50, height/2);
+      ctx.lineTo(width - 100, height/2 + 50);
+      ctx.lineTo(50, height/2 + 50);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Hole
+      ctx.fillStyle = 'black';
+      ctx.beginPath();
+      ctx.arc(width - 60, height/2, 5, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Tee box
+      ctx.fillStyle = '#f1c40f';
+      ctx.fillRect(30, height/2 - 20, 40, 40);
+      
+      // Ball
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      ctx.arc(50, height/2, 8, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Flag
+      ctx.fillStyle = 'red';
+      ctx.fillRect(width - 60, height/2 - 30, 3, 30);
+    }
   </script>
 </body>
 </html>
