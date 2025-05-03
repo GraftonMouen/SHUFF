@@ -14,20 +14,24 @@
   <style>
     * {
       box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
     body {
-      margin: 0;
       font-family: 'Segoe UI', sans-serif;
       background: url('images/background.jpg') no-repeat center center fixed;
       background-size: cover;
       color: #fff;
       line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
     body::after {
       content: "";
-      position: relative;
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
@@ -69,6 +73,11 @@
       color: #fff;
       text-decoration: none;
       font-size: 1rem;
+      transition: color 0.3s ease;
+    }
+
+    nav ul li a:hover {
+      color: #2ecc71;
     }
 
     #walletBtn {
@@ -80,10 +89,12 @@
       cursor: pointer;
       margin-top: 0.5rem;
       transition: all 0.3s ease;
+      font-weight: bold;
     }
 
     #walletBtn:hover {
       background: #27ae60;
+      transform: translateY(-2px);
     }
 
     #walletBtn.connected {
@@ -113,11 +124,12 @@
     }
 
     main {
-      padding: 1rem;
+      padding: 2rem 1rem;
+      flex: 1;
     }
 
     section {
-      margin-bottom: 3rem;
+      margin-bottom: 4rem;
       opacity: 0;
       transform: translateY(50px);
       transition: opacity 0.6s ease-out, transform 0.6s ease-out;
@@ -128,34 +140,55 @@
       transform: translateY(0);
     }
 
+    .content-container {
+      background: rgba(0, 0, 0, 0.6);
+      padding: 2.5rem;
+      border-radius: 15px;
+      max-width: 900px;
+      margin: 0 auto;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+
     .chart-container {
       width: 100%;
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 2rem;
-      background: rgba(0, 0, 0, 0.6);
-      border-radius: 12px;
+      max-width: 500px;
+      margin: 1.5rem auto;
     }
 
     .btn {
       background: #3498db;
       color: white;
-      padding: 0.75rem 1.5rem;
+      padding: 0.75rem 1.75rem;
       text-decoration: none;
       border-radius: 5px;
       display: inline-block;
-      margin-top: 1rem;
+      margin-top: 1.5rem;
       transition: all 0.3s ease;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
     }
 
     .btn:hover {
       background: #2980b9;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .btn-green {
+      background: #2ecc71;
+    }
+
+    .btn-green:hover {
+      background: #27ae60;
     }
 
     footer {
       text-align: center;
-      padding: 1rem;
+      padding: 1.5rem;
       background-color: rgba(28, 28, 28, 0.8);
+      margin-top: auto;
     }
 
     footer a {
@@ -165,78 +198,111 @@
     }
 
     footer a:hover {
-      color: #fff;
+      color: #2ecc71;
     }
 
     code {
-      background-color: #222;
-      padding: 0.2rem 0.4rem;
-      border-radius: 3px;
+      background-color: rgba(0,0,0,0.3);
+      padding: 0.3rem 0.6rem;
+      border-radius: 5px;
       font-size: 0.95rem;
+      font-family: monospace;
+      color: #f39c12;
+      border: 1px solid rgba(255,255,255,0.1);
     }
 
     .hero {
-      padding: 4rem 2rem;
+      padding: 5rem 2rem;
       text-align: center;
       background: rgba(0, 0, 0, 0.6);
       margin-bottom: 3rem;
       opacity: 1;
       transform: none;
+      border-radius: 15px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .hero h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
+      font-size: 2.8rem;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(90deg, #2ecc71, #3498db);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .hero p {
-      font-size: 1.2rem;
-      margin-bottom: 2rem;
+      font-size: 1.3rem;
+      margin-bottom: 2.5rem;
+      opacity: 0.9;
     }
 
     .hero .btn {
-      background: #2ecc71;
-      color: white;
-      padding: 0.75rem 1.5rem;
-      text-decoration: none;
-      border-radius: 5px;
       font-size: 1.2rem;
+      padding: 1rem 2.5rem;
     }
 
-    #how-to-buy {
-      background: rgba(0, 0, 0, 0.6);
-      padding: 2rem;
-      border-radius: 12px;
-      max-width: 800px;
-      margin: 0 auto;
+    h2 {
+      font-size: 2.2rem;
+      margin-bottom: 1.5rem;
+      color: #fff;
+      text-align: center;
+      position: relative;
+      padding-bottom: 0.5rem;
     }
 
-    #how-to-buy ol {
-      padding-left: 1.5rem;
+    h2::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 3px;
+      background: linear-gradient(90deg, #2ecc71, #3498db);
+      border-radius: 3px;
     }
 
-    #how-to-buy li {
+    h3, h4 {
+      color: #fff;
       margin-bottom: 1rem;
-      font-size: 1.1rem;
+    }
+
+    p {
+      margin-bottom: 1.2rem;
+      line-height: 1.7;
+    }
+
+    .phase {
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      transition: transform 0.3s ease;
+    }
+
+    .phase:hover {
+      transform: translateY(-5px);
     }
 
     .pump-link {
       display: inline-block;
       margin-top: 1.5rem;
-      color: #2ecc71;
+      color: #fff;
       text-decoration: none;
       font-weight: bold;
       font-size: 1.1rem;
-      transition: color 0.3s ease;
-      padding: 0.75rem 1.5rem;
-      border: 2px solid #2ecc71;
+      transition: all 0.3s ease;
+      padding: 0.9rem 2rem;
+      background: linear-gradient(90deg, #2ecc71, #27ae60);
       border-radius: 5px;
+      box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3);
     }
 
     .pump-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(46, 204, 113, 0.4);
       color: #fff;
-      background-color: #2ecc71;
-      text-decoration: none;
     }
 
     .buy-step {
@@ -244,31 +310,51 @@
       color: #f39c12;
     }
 
-    #game {
-      background: rgba(0, 0, 0, 0.6);
-      padding: 2rem;
-      border-radius: 12px;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-
     .game-rules {
-      background-color: rgba(46, 204, 113, 0.2);
-      padding: 1.5rem;
-      border-radius: 8px;
-      margin-top: 1.5rem;
+      background-color: rgba(46, 204, 113, 0.15);
+      padding: 1.8rem;
+      border-radius: 12px;
+      margin: 2rem 0;
       border-left: 4px solid #2ecc71;
     }
 
     .game-rules h3 {
       color: #2ecc71;
       margin-top: 0;
+      font-size: 1.5rem;
     }
 
     .jackpot {
       color: #f1c40f;
       font-weight: bold;
       font-size: 1.2rem;
+      margin: 1.5rem 0;
+      text-align: center;
+      padding: 0.8rem;
+      background: rgba(241, 196, 15, 0.1);
+      border-radius: 8px;
+      border: 1px dashed #f1c40f;
+    }
+
+    ol, ul {
+      padding-left: 2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    li {
+      margin-bottom: 0.8rem;
+      line-height: 1.6;
+    }
+
+    a {
+      color: #3498db;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    a:hover {
+      color: #2ecc71;
+      text-decoration: underline;
     }
 
     @media (max-width: 768px) {
@@ -284,17 +370,20 @@
         margin-top: 1rem;
       }
 
-      nav ul li a {
-        font-size: 1rem;
+      .content-container, .hero {
+        padding: 1.8rem;
       }
 
-      .chart-container {
-        width: 100%;
-        padding: 1rem;
+      .hero h1 {
+        font-size: 2.2rem;
       }
 
-      .logo h1 {
-        font-size: 1.25rem;
+      .hero p {
+        font-size: 1.1rem;
+      }
+
+      h2 {
+        font-size: 1.8rem;
       }
 
       #walletBtn {
@@ -304,10 +393,6 @@
       .btn {
         width: 100%;
         text-align: center;
-      }
-
-      #how-to-buy, #game {
-        padding: 1.5rem;
       }
     }
 
@@ -320,21 +405,23 @@
         font-size: 1.1rem;
       }
 
-      nav ul li a {
-        font-size: 0.95rem;
+      .content-container, .hero {
+        padding: 1.5rem;
       }
 
-      #walletBtn {
-        font-size: 1rem;
+      .hero h1 {
+        font-size: 1.8rem;
       }
 
-      #how-to-buy li {
-        font-size: 1rem;
+      h2 {
+        font-size: 1.6rem;
       }
 
       .pump-link {
         font-size: 1rem;
-        padding: 0.5rem 1rem;
+        padding: 0.8rem 1.5rem;
+        display: block;
+        text-align: center;
       }
     }
   </style>
@@ -362,90 +449,102 @@
     <section class="hero">
       <h1>Welcome to The Shuffler Coin</h1>
       <p>Faith, Fun, and a Little Bit of Golf Magic ⛳✨</p>
-      <a href="#about" class="btn">Learn More</a>
+      <a href="#about" class="btn btn-green">Learn More</a>
     </section>
 
     <section id="about">
-      <h2>About The Shuffler Coin</h2>
-      <p>Welcome to the wild ride that is <strong>$SHUFF</strong>—the meme-based token that's not just about the love of golf, but also about faith, community, and a whole lot of fun. This project isn't just about numbers; it's about <em>believing</em> in the future, one golf swing at a time.</p>
+      <div class="content-container">
+        <h2>About The Shuffler Coin</h2>
+        <p>Welcome to the wild ride that is <strong>$SHUFF</strong>—the meme-based token that's not just about the love of golf, but also about faith, community, and a whole lot of fun. This project isn't just about numbers; it's about <em>believing</em> in the future, one golf swing at a time.</p>
 
-      <h3>Our Long-Term Project Plan (Warning: Highly Faith-Based and Fan-Driven)</h3>
-      <p>Here's the plan—grab your golf clubs, your faith, and your sense of humor because we're in this for the long haul...</p>
+        <h3>Our Long-Term Project Plan (Warning: Highly Faith-Based and Fan-Driven)</h3>
+        <p>Here's the plan—grab your golf clubs, your faith, and your sense of humor because we're in this for the long haul...</p>
 
-      <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #fce2b3; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-        <h4>Year 1: Build the Faithful Community</h4>
-        <p>We'll start by gathering all the true believers in $SHUFF. Social media, word of mouth, maybe even a golf cart parade—this community will be more welcoming than a golf pro offering free lessons.</p>
+        <div class="phase" style="background-color: rgba(0,0,0,0.5); color: #fce2b3;">
+          <h4>Year 1: Build the Faithful Community</h4>
+          <p>We'll start by gathering all the true believers in $SHUFF. Social media, word of mouth, maybe even a golf cart parade—this community will be more welcoming than a golf pro offering free lessons.</p>
+        </div>
+
+        <div class="phase" style="background-color: rgba(0,0,0,0.5); color: #d4f3d5;">
+          <h4>Year 2: The Shuffler Tournament of Faith</h4>
+          <p>It's time to put our money where our mouth is (but in a fun, non-stressful way). We'll host a golf tournament—bring your putters, your faith, and your $SHUFF tokens. Win or lose, you're going home with a smile and maybe a few new tokens in your wallet.</p>
+        </div>
+
+        <div class="phase" style="background-color: rgba(0,0,0,0.5); color: #f7b8d9;">
+          <h4>Year 3: Shuffler Golf Course (Possibly in Heaven)</h4>
+          <p>By year 3, we plan to have our very own Shuffler Golf Course. It'll be a place where community members can meet, play, and worship the almighty $SHUFF token. We'll probably get a few holes-in-one too (hopefully).</p>
+        </div>
+
+        <div class="phase" style="background-color: rgba(0,0,0,0.5); color: #d3e3fc;">
+          <h4>Year 5: The Shuffler Crypto Church</h4>
+          <p>It's not just a coin, it's a lifestyle. In year 5, we're going to build a "Shuffler Crypto Church." You don't need to believe in traditional religion, but you do need to believe in $SHUFF. Get ready for spiritual enlightenment... with a golf club in hand.</p>
+        </div>
+
+        <div class="phase" style="background-color: rgba(0,0,0,0.5); color: #f6f7b2;">
+          <h4>Year 10: Shuffler's Ascension to Crypto Godhood</h4>
+          <p>After 10 years of spreading the gospel of $SHUFF, we'll have ascended to the highest levels of the crypto world. We'll be bigger than a golf ball on a driver's tee (metaphorically speaking).</p>
+        </div>
+
+        <p>It's a journey, it's a mission, and it's going to be one heck of a ride...</p>
+        <p>Join us as we shuffle our way to a brighter, fun-filled future!</p>
       </div>
-
-      <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #d4f3d5; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-        <h4>Year 2: The Shuffler Tournament of Faith</h4>
-        <p>It's time to put our money where our mouth is (but in a fun, non-stressful way). We'll host a golf tournament—bring your putters, your faith, and your $SHUFF tokens. Win or lose, you're going home with a smile and maybe a few new tokens in your wallet.</p>
-      </div>
-
-      <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #f7b8d9; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-        <h4>Year 3: Shuffler Golf Course (Possibly in Heaven)</h4>
-        <p>By year 3, we plan to have our very own Shuffler Golf Course. It'll be a place where community members can meet, play, and worship the almighty $SHUFF token. We'll probably get a few holes-in-one too (hopefully).</p>
-      </div>
-
-      <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #d3e3fc; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-        <h4>Year 5: The Shuffler Crypto Church</h4>
-        <p>It's not just a coin, it's a lifestyle. In year 5, we're going to build a "Shuffler Crypto Church." You don't need to believe in traditional religion, but you do need to believe in $SHUFF. Get ready for spiritual enlightenment... with a golf club in hand.</p>
-      </div>
-
-      <div class="phase" style="background-color: rgba(0,0,0,0.6); color: #f6f7b2; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-        <h4>Year 10: Shuffler's Ascension to Crypto Godhood</h4>
-        <p>After 10 years of spreading the gospel of $SHUFF, we'll have ascended to the highest levels of the crypto world. We'll be bigger than a golf ball on a driver's tee (metaphorically speaking).</p>
-      </div>
-
-      <p>It's a journey, it's a mission, and it's going to be one heck of a ride...</p>
-      <p>Join us as we shuffle our way to a brighter, fun-filled future!</p>
     </section>
 
     <section id="tokenomics">
-      <h2>Tokenomics</h2>
-      <div class="chart-container">
-        <canvas id="tokenomicsChart"></canvas>
+      <div class="content-container">
+        <h2>Tokenomics</h2>
+        <div class="chart-container">
+          <canvas id="tokenomicsChart"></canvas>
+        </div>
       </div>
     </section>
 
     <section id="game">
-      <h2>Play The Shuffler Game!</h2>
-      <p>Test your golf skills with our exclusive Shuffler mini-game. Can you master the perfect putt?</p>
-      
-      <div class="game-rules">
-        <h3>How to Play & Win</h3>
-        <p><strong>Objective:</strong> Get your ball as close to the hole as possible with a single putt.</p>
-        <p><strong>Scoring:</strong> The player who lands closest to the pin wins the round.</p>
-        <p class="jackpot">🏆 HOLE-IN-ONE JACKPOT: Hit a hole-in-one to win 1,000,000 $SHUFF tokens! 🏆</p>
-        <p><strong>Note:</strong> Game results are verified on-chain to ensure fair play. Winners receive their $SHUFF rewards directly to their connected wallet.</p>
+      <div class="content-container">
+        <h2>Play The Shuffler Game!</h2>
+        <p>Test your golf skills with our exclusive Shuffler mini-game. Can you master the perfect putt?</p>
+        
+        <div class="game-rules">
+          <h3>How to Play & Win</h3>
+          <p><strong>Objective:</strong> Get your ball as close to the hole as possible with a single putt.</p>
+          <p><strong>Scoring:</strong> The player who lands closest to the pin wins the round.</p>
+          <p class="jackpot">🏆 HOLE-IN-ONE JACKPOT: Hit a hole-in-one to win 1,000,000 $SHUFF tokens! 🏆</p>
+          <p><strong>Note:</strong> Game results are verified on-chain to ensure fair play. Winners receive their $SHUFF rewards directly to their connected wallet.</p>
+        </div>
+        
+        <a href="game.html" class="btn btn-green">Play Now</a>
       </div>
-      
-      <a href="game.html" class="btn">Play Now</a>
     </section>
 
     <section id="how-to-buy">
-      <h2>How to Buy $SHUFF</h2>
-      <ol>
-        <li><span class="buy-step">Step 1:</span> Download and install <a href="https://phantom.app/" target="_blank">Phantom Wallet</a> for your browser or mobile device.</li>
-        <li><span class="buy-step">Step 2:</span> Fund your wallet with SOL (Solana) from any exchange like Coinbase, Binance, or Kraken.</li>
-        <li><span class="buy-step">Step 3:</span> Visit our official launch page on <a href="https://pump.fun/coin/GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump" target="_blank">Pump.fun</a> or search for "Scottie Shuffler Coin".</li>
-        <li><span class="buy-step">Step 4:</span> Connect your Phantom Wallet and swap SOL for $SHUFF tokens.</li>
-      </ol>
-      
-      <p><strong>Contract Address:</strong> <code>GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump</code></p>
-      
-      <a href="https://pump.fun/coin/GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump" class="pump-link" target="_blank">🚀 Buy $SHUFF Now on Pump.fun →</a>
+      <div class="content-container">
+        <h2>How to Buy $SHUFF</h2>
+        <ol>
+          <li><span class="buy-step">Step 1:</span> Download and install <a href="https://phantom.app/" target="_blank">Phantom Wallet</a> for your browser or mobile device.</li>
+          <li><span class="buy-step">Step 2:</span> Fund your wallet with SOL (Solana) from any exchange like Coinbase, Binance, or Kraken.</li>
+          <li><span class="buy-step">Step 3:</span> Visit our official launch page on <a href="https://pump.fun/coin/GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump" target="_blank">Pump.fun</a> or search for "Scottie Shuffler Coin".</li>
+          <li><span class="buy-step">Step 4:</span> Connect your Phantom Wallet and swap SOL for $SHUFF tokens.</li>
+        </ol>
+        
+        <p><strong>Contract Address:</strong> <code>GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump</code></p>
+        
+        <a href="https://pump.fun/coin/GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump" class="pump-link" target="_blank">🚀 Buy $SHUFF Now on Pump.fun →</a>
+      </div>
     </section>
 
     <section id="contact">
-      <h2>Contact</h2>
-      <p>Follow us on <a href="https://x.com/ScottieShuffles" target="_blank">X (Twitter)</a> and <a href="https://www.instagram.com/scottieshufflers/" target="_blank">Instagram</a> for the latest updates.</p>
-      <p>Join our community on <a href="#" target="_blank">Discord</a> to chat with other Shufflers!</p>
+      <div class="content-container">
+        <h2>Contact</h2>
+        <p>Follow us on <a href="https://x.com/ScottieShuffles" target="_blank">X (Twitter)</a> and <a href="https://www.instagram.com/scottieshufflers/" target="_blank">Instagram</a> for the latest updates.</p>
+        <p>Join our community on <a href="#" target="_blank">Discord</a> to chat with other Shufflers!</p>
+        <p>Have questions? Reach out to us at <a href="mailto:info@shufflercoin.com">info@shufflercoin.com</a></p>
+      </div>
     </section>
   </main>
 
   <footer>
     <p>Made with ❤️ by the Shuffler team. May your putts be true and your faith in $SHUFF be strong!</p>
+    <p>&copy; 2023 The Shuffler Coin. All rights reserved.</p>
   </footer>
 
   <script>
@@ -523,9 +622,16 @@
       },
       options: {
         responsive: true,
+        maintainAspectRatio: true,
         plugins: {
           legend: {
-            position: 'top',
+            position: 'right',
+            labels: {
+              font: {
+                size: 14
+              },
+              padding: 20
+            }
           },
           tooltip: {
             callbacks: {
