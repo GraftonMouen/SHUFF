@@ -321,42 +321,49 @@
       ctx.closePath();
       ctx.fill();
       
-      // Draw green
+      // Draw green (positioned carefully to avoid overlaps)
+      const greenX = 700;
+      const greenY = 300;
+      const greenRadius = 50;
       ctx.fillStyle = '#7CFC00';
       ctx.beginPath();
-      ctx.arc(gameState.holePosition.x, gameState.holePosition.y, 50, 0, Math.PI * 2);
+      ctx.arc(greenX, greenY, greenRadius, 0, Math.PI * 2);
       ctx.fill();
       
       // Draw hole
       ctx.fillStyle = 'black';
       ctx.beginPath();
-      ctx.arc(gameState.holePosition.x, gameState.holePosition.y, gameState.holeRadius, 0, Math.PI * 2);
+      ctx.arc(greenX, greenY, gameState.holeRadius, 0, Math.PI * 2);
       ctx.fill();
       
       // Draw flag
       ctx.fillStyle = 'red';
-      ctx.fillRect(gameState.holePosition.x - 2, gameState.holePosition.y - 40, 4, 40);
+      ctx.fillRect(greenX - 2, greenY - 40, 4, 40);
       ctx.beginPath();
-      ctx.moveTo(gameState.holePosition.x, gameState.holePosition.y - 40);
-      ctx.lineTo(gameState.holePosition.x + 15, gameState.holePosition.y - 30);
-      ctx.lineTo(gameState.holePosition.x, gameState.holePosition.y - 20);
+      ctx.moveTo(greenX, greenY - 40);
+      ctx.lineTo(greenX + 15, greenY - 30);
+      ctx.lineTo(greenX, greenY - 20);
       ctx.closePath();
       ctx.fill();
       
-      // Draw water hazard (left of green)
+      // Draw water hazard (positioned carefully left of green)
+      const waterX = greenX - greenRadius - 50;
+      const waterY = greenY + 20;
       ctx.fillStyle = '#1E90FF';
       ctx.beginPath();
-      ctx.moveTo(580, 320);
-      ctx.bezierCurveTo(620, 310, 650, 320, 680, 330);
-      ctx.lineTo(680, 350);
-      ctx.lineTo(580, 350);
+      ctx.moveTo(waterX, waterY);
+      ctx.bezierCurveTo(waterX + 40, waterY - 10, waterX + 70, waterY, waterX + 100, waterY + 10);
+      ctx.lineTo(waterX + 100, waterY + 30);
+      ctx.lineTo(waterX, waterY + 30);
       ctx.closePath();
       ctx.fill();
       
-      // Draw sand bunker (right of green)
+      // Draw sand bunker (positioned carefully right of green)
+      const bunkerX = greenX + greenRadius + 30;
+      const bunkerY = greenY - 20;
       ctx.fillStyle = '#F5DEB3';
       ctx.beginPath();
-      ctx.arc(750, 280, 30, 0, Math.PI * 2);
+      ctx.arc(bunkerX, bunkerY, 30, 0, Math.PI * 2);
       ctx.fill();
       
       // Draw ball
@@ -367,7 +374,15 @@
       ctx.strokeStyle = 'black';
       ctx.stroke();
       
-      // Update distance display
+      // Update game state hazards to match drawn positions
+      gameState.hazards.water = [
+        { x: waterX, y: waterY, width: 100, height: 30 }
+      ];
+      gameState.hazards.sand = [
+        { x: bunkerX, y: bunkerY, radius: 30 }
+      ];
+      gameState.holePosition = { x: greenX, y: greenY };
+      
       updateDistanceDisplay();
     }
 
@@ -400,14 +415,19 @@
           shuffMint,
           publicKey
         );
-        const accountExists = await connection.getAccountInfo(tokenAccount);
-        if (!accountExists) return 0;
+        const accountInfo = await connection.getAccountInfo(tokenAccount);
+        if (!accountInfo) {
+          console.log("Token account doesn't exist");
+          return 0;
+        }
+        
         const token = new splToken.Token(
           connection,
           shuffMint,
           solanaWeb3.TOKEN_PROGRAM_ID,
           null
         );
+        
         const tokenAccountInfo = await token.getAccountInfo(tokenAccount);
         const balance = tokenAccountInfo.amount / Math.pow(10, SHUFF_DECIMALS);
         return balance.toFixed(2);
@@ -445,6 +465,7 @@
         walletAddressSpan.textContent = `${walletAddress.substring(0, 4)}...${walletAddress.substring(walletAddress.length - 4)}`;
         document.getElementById('wallet-info').style.display = 'block';
         
+        // Get and display balance
         const balance = await getShuffBalance(walletPublicKey);
         walletBalanceSpan.textContent = balance;
         
@@ -503,12 +524,8 @@
         holeRadius: 8,
         ballRadius: 8,
         hazards: {
-          water: [
-            { x: 580, y: 320, width: 100, height: 30 }
-          ],
-          sand: [
-            { x: 750, y: 280, radius: 30 }
-          ]
+          water: [],
+          sand: []
         },
         gameActive: true,
         disqualified: false,
