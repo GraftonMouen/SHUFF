@@ -289,66 +289,155 @@
       drawGame();
     }
 
-    // Draw Game Elements
+    // Draw Game Elements with improved realism
     function drawGame() {
       // Clear canvas
       ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
       
-      // Draw green background (fairway)
-      ctx.fillStyle = '#27ae60';
+      // Draw sky gradient
+      const skyGradient = ctx.createLinearGradient(0, 0, 0, gameCanvas.height);
+      skyGradient.addColorStop(0, '#87CEEB');
+      skyGradient.addColorStop(1, '#E0F7FA');
+      ctx.fillStyle = skyGradient;
       ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
       
-      // Draw fairway path
-      ctx.fillStyle = '#2ecc71';
+      // Draw distant trees/hills
+      ctx.fillStyle = '#2E8B57';
+      ctx.beginPath();
+      ctx.moveTo(0, 300);
+      ctx.bezierCurveTo(100, 250, 200, 270, 300, 260);
+      ctx.bezierCurveTo(400, 250, 500, 270, 600, 260);
+      ctx.bezierCurveTo(700, 250, 800, 270, 800, 300);
+      ctx.lineTo(800, 400);
+      ctx.lineTo(0, 400);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Draw fairway with depth
+      const fairwayGradient = ctx.createLinearGradient(0, 150, 0, 250);
+      fairwayGradient.addColorStop(0, '#4CAF50');
+      fairwayGradient.addColorStop(1, '#2E7D32');
+      ctx.fillStyle = fairwayGradient;
       ctx.beginPath();
       ctx.moveTo(50, 200);
-      ctx.bezierCurveTo(200, 150, 400, 150, 650, 200);
-      ctx.bezierCurveTo(750, 220, 750, 220, 650, 250);
-      ctx.bezierCurveTo(400, 300, 200, 300, 50, 250);
+      ctx.bezierCurveTo(200, 180, 400, 170, 650, 200);
+      ctx.bezierCurveTo(750, 210, 750, 210, 650, 230);
+      ctx.bezierCurveTo(400, 260, 200, 250, 50, 230);
       ctx.closePath();
       ctx.fill();
       
-      // Draw green (circle around hole)
-      ctx.fillStyle = '#7CFC00'; // Light green
+      // Draw green with realistic shape and shading
+      const greenGradient = ctx.createRadialGradient(
+        gameState.holePosition.x, gameState.holePosition.y, 10,
+        gameState.holePosition.x, gameState.holePosition.y, 50
+      );
+      greenGradient.addColorStop(0, '#7CFC00');
+      greenGradient.addColorStop(1, '#228B22');
+      ctx.fillStyle = greenGradient;
       ctx.beginPath();
-      ctx.arc(gameState.holePosition.x, gameState.holePosition.y, 40, 0, Math.PI * 2);
+      ctx.ellipse(
+        gameState.holePosition.x, gameState.holePosition.y,
+        60, 40, Math.PI/4, 0, Math.PI * 2
+      );
       ctx.fill();
       
-      // Draw water hazard (bottom left of green)
-      ctx.fillStyle = '#3498db';
+      // Draw water hazard with realistic shape and shading
+      const waterGradient = ctx.createLinearGradient(550, 250, 700, 350);
+      waterGradient.addColorStop(0, '#1E90FF');
+      waterGradient.addColorStop(1, '#00BFFF');
+      ctx.fillStyle = waterGradient;
       ctx.beginPath();
-      ctx.moveTo(600, 250);
-      ctx.bezierCurveTo(620, 270, 650, 280, 680, 270);
-      ctx.lineTo(680, 350);
-      ctx.lineTo(550, 350);
-      ctx.lineTo(550, 270);
+      ctx.moveTo(550, 250);
+      ctx.bezierCurveTo(600, 230, 650, 240, 680, 260);
+      ctx.bezierCurveTo(700, 280, 700, 320, 650, 340);
+      ctx.bezierCurveTo(600, 350, 570, 330, 550, 300);
       ctx.closePath();
       ctx.fill();
       
-      // Draw sand bunker (right of green)
-      ctx.fillStyle = '#f1c40f';
+      // Add water ripple effect
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.ellipse(
+          600 + i * 20, 290 + i * 10,
+          30 + i * 10, 20 + i * 5,
+          Math.PI/4, 0, Math.PI * 2
+        );
+        ctx.stroke();
+      }
+      
+      // Draw sand bunker with realistic shape and shading
+      const sandGradient = ctx.createRadialGradient(750, 170, 0, 750, 170, 40);
+      sandGradient.addColorStop(0, '#F5DEB3');
+      sandGradient.addColorStop(1, '#D2B48C');
+      ctx.fillStyle = sandGradient;
       ctx.beginPath();
-      ctx.arc(750, 180, 30, 0, Math.PI * 2);
+      ctx.ellipse(750, 170, 50, 30, Math.PI/6, 0, Math.PI * 2);
       ctx.fill();
       
-      // Draw hole
-      ctx.fillStyle = 'black';
+      // Add sand texture
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      for (let i = 0; i < 50; i++) {
+        const x = 750 + (Math.random() - 0.5) * 60;
+        const y = 170 + (Math.random() - 0.5) * 40;
+        const size = Math.random() * 3;
+        ctx.fillRect(x, y, size, size);
+      }
+      
+      // Draw hole with depth effect
+      ctx.fillStyle = '#000';
       ctx.beginPath();
       ctx.arc(gameState.holePosition.x, gameState.holePosition.y, gameState.holeRadius, 0, Math.PI * 2);
       ctx.fill();
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.beginPath();
+      ctx.arc(gameState.holePosition.x, gameState.holePosition.y, gameState.holeRadius, Math.PI, Math.PI * 2);
+      ctx.fill();
       
-      // Draw ball
+      // Draw flag
+      ctx.fillStyle = '#FF0000';
+      ctx.fillRect(gameState.holePosition.x - 2, gameState.holePosition.y - 60, 4, 60);
+      ctx.beginPath();
+      ctx.moveTo(gameState.holePosition.x, gameState.holePosition.y - 60);
+      ctx.lineTo(gameState.holePosition.x + 20, gameState.holePosition.y - 50);
+      ctx.lineTo(gameState.holePosition.x, gameState.holePosition.y - 40);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Draw ball with shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.beginPath();
+      ctx.ellipse(
+        gameState.ballPosition.x + 3, 
+        gameState.ballPosition.y + 3,
+        gameState.ballRadius, 
+        gameState.ballRadius/2,
+        0, 0, Math.PI * 2
+      );
+      ctx.fill();
+      
       ctx.fillStyle = 'white';
       ctx.beginPath();
       ctx.arc(gameState.ballPosition.x, gameState.ballPosition.y, gameState.ballRadius, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = 'black';
-      ctx.stroke();
+      
+      // Add ball highlight
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.beginPath();
+      ctx.arc(
+        gameState.ballPosition.x - gameState.ballRadius/3,
+        gameState.ballPosition.y - gameState.ballRadius/3,
+        gameState.ballRadius/3,
+        0, Math.PI * 2
+      );
+      ctx.fill();
       
       // Update distance display
       updateDistanceDisplay();
     }
 
+    // [Rest of your existing JavaScript functions remain exactly the same]
     // Update distance display
     function updateDistanceDisplay() {
       const dx = gameState.ballPosition.x - gameState.holePosition.x;
@@ -512,10 +601,10 @@
         terrain: [],
         hazards: {
           water: [
-            { x: 600, y: 250, width: 150, height: 100 } // Water to bottom left of green
+            { x: 550, y: 250, width: 150, height: 100 } // Water to bottom left of green
           ],
           sand: [
-            { x: 750, y: 180, radius: 30 } // Single sand bunker to right of green
+            { x: 750, y: 170, radius: 40 } // Single sand bunker to right of green
           ]
         },
         wind: { 
