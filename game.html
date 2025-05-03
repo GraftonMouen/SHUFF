@@ -246,7 +246,7 @@
       isMoving: false,
       strokes: 0,
       lastSwingAmount: 0,
-      holePosition: { x: 740, y: 200 },
+      holePosition: { x: 700, y: 200 },
       holeRadius: 5,
       ballRadius: 8,
       terrain: [],
@@ -294,35 +294,41 @@
       // Clear canvas
       ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
       
-      // Draw green background
-      ctx.fillStyle = '#2ecc71';
+      // Draw green background (fairway)
+      ctx.fillStyle = '#27ae60';
       ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
       
-      // Draw fairway
-      ctx.fillStyle = '#27ae60';
+      // Draw fairway path
+      ctx.fillStyle = '#2ecc71';
       ctx.beginPath();
-      ctx.moveTo(50, 150);
-      ctx.quadraticCurveTo(400, 50, 750, 150);
-      ctx.quadraticCurveTo(400, 350, 50, 150);
+      ctx.moveTo(50, 200);
+      ctx.bezierCurveTo(200, 150, 400, 150, 650, 200);
+      ctx.bezierCurveTo(750, 220, 750, 220, 650, 250);
+      ctx.bezierCurveTo(400, 300, 200, 300, 50, 250);
+      ctx.closePath();
       ctx.fill();
       
-      // Draw water hazard
+      // Draw green (circle around hole)
+      ctx.fillStyle = '#7CFC00'; // Light green
+      ctx.beginPath();
+      ctx.arc(gameState.holePosition.x, gameState.holePosition.y, 40, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Draw water hazard (bottom left of green)
       ctx.fillStyle = '#3498db';
       ctx.beginPath();
-      ctx.moveTo(300, 100);
-      ctx.quadraticCurveTo(450, 150, 600, 100);
-      ctx.quadraticCurveTo(450, 300, 300, 100);
+      ctx.moveTo(600, 250);
+      ctx.bezierCurveTo(620, 270, 650, 280, 680, 270);
+      ctx.lineTo(680, 350);
+      ctx.lineTo(550, 350);
+      ctx.lineTo(550, 270);
+      ctx.closePath();
       ctx.fill();
       
-      // Draw sand bunkers
+      // Draw sand bunker (right of green)
       ctx.fillStyle = '#f1c40f';
-      // Left bunker
       ctx.beginPath();
-      ctx.arc(200, 180, 30, 0, Math.PI * 2);
-      ctx.fill();
-      // Right bunker
-      ctx.beginPath();
-      ctx.arc(600, 220, 40, 0, Math.PI * 2);
+      ctx.arc(750, 180, 30, 0, Math.PI * 2);
       ctx.fill();
       
       // Draw hole
@@ -500,17 +506,16 @@
         isMoving: false,
         strokes: 0,
         lastSwingAmount: 0,
-        holePosition: { x: 740, y: 200 },
+        holePosition: { x: 700, y: 200 },
         holeRadius: 5,
         ballRadius: 8,
         terrain: [],
         hazards: {
           water: [
-            { x: 300, y: 100, width: 300, height: 200 }
+            { x: 600, y: 250, width: 150, height: 100 } // Water to bottom left of green
           ],
           sand: [
-            { x: 200, y: 180, radius: 30 },
-            { x: 600, y: 220, radius: 40 }
+            { x: 750, y: 180, radius: 30 } // Single sand bunker to right of green
           ]
         },
         wind: { 
