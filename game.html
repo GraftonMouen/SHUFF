@@ -32,7 +32,7 @@
     }
     
     #game-canvas {
-      background: #87CEEB; /* Sky blue */
+      background: #87CEEB;
       border-radius: 8px;
       margin: 20px auto;
       display: block;
@@ -231,8 +231,8 @@
     // Game Configuration
     const shuffMint = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump');
     const SHUFF_DECIMALS = 9;
-    const HOLE_IN_ONE_CHANCE = 1 / 10000; // 1 in 10,000 chance
-    const PIXELS_TO_FEET = 0.3; // Conversion factor for distance display
+    const HOLE_IN_ONE_CHANCE = 1 / 10000;
+    const PIXELS_TO_FEET = 0.3;
     
     // Game State
     let walletAddress = null;
@@ -249,12 +249,10 @@
       holePosition: { x: 700, y: 300 },
       holeRadius: 8,
       ballRadius: 8,
-      terrain: [],
       hazards: {
         water: [],
         sand: []
       },
-      wind: { x: 0, y: 0 },
       gameActive: false,
       disqualified: false,
       canvasWidth: 800,
@@ -271,7 +269,6 @@
     const swingAmountInput = document.getElementById('swing-amount');
     const swingBtn = document.getElementById('swing-btn');
     const statusDiv = document.getElementById('status');
-    const feeEstimateDiv = document.getElementById('fee-estimate');
     const loadingSpinner = document.getElementById('loading-spinner');
     const leaderboardList = document.getElementById('leaderboard-list');
     const lastTxInfo = document.getElementById('last-tx-info');
@@ -289,7 +286,7 @@
       drawGame();
     }
 
-    // Draw Game Elements - Professional 2D Design
+    // Draw Game Elements
     function drawGame() {
       // Clear canvas
       ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
@@ -298,11 +295,11 @@
       ctx.fillStyle = '#87CEEB';
       ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
       
-      // Draw ground (extends to bottom)
+      // Draw ground
       ctx.fillStyle = '#4CAF50';
-      ctx.fillRect(0, 250, gameCanvas.width, gameCanvas.height - 250);
+      ctx.fillRect(0, 300, gameCanvas.width, gameCanvas.height - 300);
       
-      // Draw fairway (path to green)
+      // Draw fairway (light green path)
       ctx.fillStyle = '#2E8B57';
       ctx.beginPath();
       ctx.moveTo(50, 300);
@@ -312,21 +309,19 @@
       ctx.closePath();
       ctx.fill();
       
-      // Draw rough (outside fairway)
+      // Draw rough (darker green outside fairway)
       ctx.fillStyle = '#3CB371';
       ctx.beginPath();
-      ctx.moveTo(0, 250);
+      ctx.moveTo(0, 300);
       ctx.lineTo(0, 400);
       ctx.lineTo(800, 400);
-      ctx.lineTo(800, 250);
-      ctx.bezierCurveTo(750, 270, 650, 280, 650, 300);
-      ctx.bezierCurveTo(650, 320, 750, 330, 800, 350);
-      ctx.lineTo(800, 400);
-      ctx.lineTo(0, 400);
+      ctx.lineTo(800, 300);
+      ctx.bezierCurveTo(750, 310, 650, 310, 650, 300);
+      ctx.bezierCurveTo(650, 290, 750, 290, 800, 300);
       ctx.closePath();
       ctx.fill();
       
-      // Draw green (flat circle)
+      // Draw green
       ctx.fillStyle = '#7CFC00';
       ctx.beginPath();
       ctx.arc(gameState.holePosition.x, gameState.holePosition.y, 50, 0, Math.PI * 2);
@@ -348,7 +343,7 @@
       ctx.closePath();
       ctx.fill();
       
-      // Draw water hazard (bottom left of green - not overlapping)
+      // Draw water hazard (left of green)
       ctx.fillStyle = '#1E90FF';
       ctx.beginPath();
       ctx.moveTo(580, 320);
@@ -358,45 +353,24 @@
       ctx.closePath();
       ctx.fill();
       
-      // Draw sand bunker (right of green - not overlapping)
+      // Draw sand bunker (right of green)
       ctx.fillStyle = '#F5DEB3';
       ctx.beginPath();
       ctx.arc(750, 280, 30, 0, Math.PI * 2);
       ctx.fill();
       
-      // Add sand texture
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-      for (let i = 0; i < 30; i++) {
-        const x = 750 + (Math.random() - 0.5) * 40;
-        const y = 280 + (Math.random() - 0.5) * 30;
-        const size = Math.random() * 2 + 1;
-        ctx.fillRect(x, y, size, size);
-      }
-      
-      // Draw ball with shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-      ctx.beginPath();
-      ctx.ellipse(
-        gameState.ballPosition.x + 2, 
-        gameState.ballPosition.y + 2,
-        gameState.ballRadius, 
-        gameState.ballRadius/2,
-        0, 0, Math.PI * 2
-      );
-      ctx.fill();
-      
+      // Draw ball
       ctx.fillStyle = 'white';
       ctx.beginPath();
       ctx.arc(gameState.ballPosition.x, gameState.ballPosition.y, gameState.ballRadius, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.strokeStyle = 'black';
       ctx.stroke();
       
       // Update distance display
       updateDistanceDisplay();
     }
 
-    // [Rest of your existing JavaScript functions remain exactly the same]
     function updateDistanceDisplay() {
       const dx = gameState.ballPosition.x - gameState.holePosition.x;
       const dy = gameState.ballPosition.y - gameState.holePosition.y;
@@ -447,6 +421,7 @@
       try {
         connectBtn.disabled = true;
         statusDiv.textContent = "Connecting to wallet...";
+        
         if (!window.solana || !window.solana.isPhantom) {
           statusDiv.textContent = "Phantom Wallet not installed!";
           statusDiv.style.color = "#e74c3c";
@@ -454,6 +429,7 @@
           connectBtn.disabled = false;
           return;
         }
+        
         if (!connection) {
           const connected = await initializeConnection();
           if (!connected) {
@@ -461,18 +437,24 @@
             return;
           }
         }
+        
         const response = await window.solana.connect();
         walletPublicKey = response.publicKey;
         walletAddress = walletPublicKey.toString();
+        
         walletAddressSpan.textContent = `${walletAddress.substring(0, 4)}...${walletAddress.substring(walletAddress.length - 4)}`;
         document.getElementById('wallet-info').style.display = 'block';
+        
         const balance = await getShuffBalance(walletPublicKey);
         walletBalanceSpan.textContent = balance;
+        
         newGameBtn.disabled = false;
         swingBtn.disabled = false;
         disconnectBtn.disabled = false;
+        
         statusDiv.textContent = "Wallet connected successfully!";
         statusDiv.style.color = "#2ecc71";
+        
         checkExistingGame();
       } catch (err) {
         console.error("Wallet connection error:", err);
@@ -487,13 +469,16 @@
         if (window.solana && window.solana.disconnect) {
           await window.solana.disconnect();
         }
+        
         walletAddress = null;
         walletPublicKey = null;
+        
         document.getElementById('wallet-info').style.display = 'none';
         connectBtn.disabled = false;
         disconnectBtn.disabled = true;
         newGameBtn.disabled = true;
         swingBtn.disabled = true;
+        
         statusDiv.textContent = "Wallet disconnected";
         statusDiv.style.color = "#3498db";
       } catch (err) {
@@ -517,7 +502,6 @@
         holePosition: { x: 700, y: 300 },
         holeRadius: 8,
         ballRadius: 8,
-        terrain: [],
         hazards: {
           water: [
             { x: 580, y: 320, width: 100, height: 30 }
@@ -526,15 +510,12 @@
             { x: 750, y: 280, radius: 30 }
           ]
         },
-        wind: { 
-          x: (Math.random() - 0.5) * 0.5,
-          y: (Math.random() - 0.5) * 0.5 
-        },
         gameActive: true,
         disqualified: false,
         canvasWidth: 800,
         canvasHeight: 400
       };
+      
       strokeCountSpan.textContent = "0";
       gameStatusSpan.textContent = "Game in progress";
       drawGame();
@@ -542,33 +523,44 @@
 
     async function makeSwing() {
       const swingAmount = parseFloat(swingAmountInput.value);
-      if (isNaN(swingAmount) {
+      
+      if (isNaN(swingAmount) || swingAmount < 0.1 || swingAmount > 100) {
         statusDiv.textContent = "Please enter a valid SHUFF amount (0.1-100)";
         statusDiv.style.color = "#e74c3c";
         return;
       }
+      
       try {
         loadingSpinner.style.display = 'block';
         swingBtn.disabled = true;
         statusDiv.textContent = "Preparing swing...";
+        
         await new Promise(resolve => setTimeout(resolve, 2000));
+        
         gameState.strokes++;
         gameState.lastSwingAmount = swingAmount;
         strokeCountSpan.textContent = gameState.strokes;
+        
         const power = swingAmount * 0.5;
+        
         const dx = gameState.holePosition.x - gameState.ballPosition.x;
         const dy = gameState.holePosition.y - gameState.ballPosition.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         const directionNoise = (Math.random() - 0.5) * 0.2;
+        
         gameState.ballVelocity = {
           x: (dx / distance + directionNoise) * power,
           y: (dy / distance + directionNoise) * power
         };
+        
         gameState.isMoving = true;
         gameStatusSpan.textContent = "Ball in motion...";
+        
         animateBall();
+        
         statusDiv.textContent = `Swing successful with ${swingAmount} SHUFF!`;
         statusDiv.style.color = "#2ecc71";
+        
         lastTransactionSignature = "simulated_tx_signature_" + Math.random().toString(36).substring(2);
         lastTxInfo.style.display = 'block';
         lastTxLink.href = `https://solscan.io/tx/${lastTransactionSignature}`;
@@ -584,24 +576,30 @@
 
     function animateBall() {
       if (!gameState.isMoving) return;
+      
       gameState.ballVelocity.x *= 0.98;
       gameState.ballVelocity.y *= 0.98;
-      gameState.ballVelocity.x += gameState.wind.x * 0.1;
-      gameState.ballVelocity.y += gameState.wind.y * 0.1;
+      
       gameState.ballPosition.x += gameState.ballVelocity.x;
       gameState.ballPosition.y += gameState.ballVelocity.y;
+      
       checkCollisions();
+      
       drawGame();
+      
       const speed = Math.sqrt(
         gameState.ballVelocity.x * gameState.ballVelocity.x +
         gameState.ballVelocity.y * gameState.ballVelocity.y
       );
+      
       if (speed < 0.5) {
         gameState.isMoving = false;
         gameStatusSpan.textContent = "Ball at rest";
+        
         const dx = gameState.ballPosition.x - gameState.holePosition.x;
         const dy = gameState.ballPosition.y - gameState.holePosition.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
+        
         if (distance < gameState.holeRadius + gameState.ballRadius) {
           gameStatusSpan.textContent = "Hole in one!";
         }
@@ -611,6 +609,7 @@
     }
 
     function checkCollisions() {
+      // Check water hazard
       for (const water of gameState.hazards.water) {
         if (isPointInEllipse(gameState.ballPosition, water)) {
           gameStatusSpan.textContent = "Ball in water hazard - Disqualified!";
@@ -620,15 +619,20 @@
           return;
         }
       }
+      
+      // Check sand bunkers
       for (const sand of gameState.hazards.sand) {
         const dx = gameState.ballPosition.x - sand.x;
         const dy = gameState.ballPosition.y - sand.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
+        
         if (distance < sand.radius) {
           gameState.ballVelocity.x *= 0.9;
           gameState.ballVelocity.y *= 0.9;
         }
       }
+      
+      // Check boundaries
       if (gameState.ballPosition.x < gameState.ballRadius || 
           gameState.ballPosition.x > gameState.canvasWidth - gameState.ballRadius ||
           gameState.ballPosition.y < gameState.ballRadius || 
@@ -660,6 +664,7 @@
 
     window.addEventListener('load', async () => {
       initializeCanvas();
+      
       if (window.solana && window.solana.isPhantom) {
         try {
           const connected = await window.solana.connect({ onlyIfTrusted: true });
