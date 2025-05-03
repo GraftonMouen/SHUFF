@@ -106,6 +106,13 @@
       font-weight: bold;
     }
     
+    #game-info {
+      margin: 15px 0;
+      padding: 10px;
+      background: #ecf0f1;
+      border-radius: 5px;
+    }
+    
     #loading-spinner {
       margin: 20px 0;
     }
@@ -141,6 +148,8 @@
     #leaderboard-list li {
       padding: 8px;
       border-bottom: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
     }
     
     #leaderboard-list li:last-child {
@@ -177,12 +186,13 @@
 </head>
 <body>
   <div class="game-container">
-    <h1>🏌️ Solana Golf Game ($SHUFF)</h1>
+    <h1>🏌️ Solana Golf Game ($SHUFF) - Par 3</h1>
     
     <div class="button-group">
       <button id="connect-wallet-btn">Connect Phantom Wallet</button>
       <button id="disconnect-btn" disabled>Disconnect</button>
       <button id="refresh-btn">🔄 Refresh</button>
+      <button id="new-game-btn" disabled>New Game</button>
     </div>
 
     <div id="wallet-info" style="display:none;">
@@ -191,8 +201,13 @@
       <p id="last-tx-info" style="display:none;">Last TX: <a href="#" id="last-tx-link" class="tx-link" target="_blank">View</a></p>
     </div>
 
+    <div id="game-info">
+      <p>Strokes: <span id="stroke-count">0</span> | Distance to Hole: <span id="distance-to-hole">-</span> ft</p>
+      <p>Status: <span id="game-status">Not started</span></p>
+    </div>
+
     <div id="swing-input-container">
-      <input type="number" id="swing-amount" placeholder="Enter SHUFF amount" min="0.1" step="0.1">
+      <input type="number" id="swing-amount" placeholder="Enter SHUFF amount (0.1-100)" min="0.1" max="100" step="0.1">
       <button id="swing-btn" disabled>Swing!</button>
     </div>
 
@@ -207,7 +222,7 @@
     <canvas id="game-canvas"></canvas>
 
     <div id="leaderboard">
-      <h2>🏆 Leaderboard</h2>
+      <h2>🏆 Leaderboard (Distance to Hole)</h2>
       <ul id="leaderboard-list"></ul>
     </div>
   </div>
@@ -216,6 +231,8 @@
     // Game Configuration
     const shuffMint = new solanaWeb3.PublicKey('GGnZQxAcBXvhKJFX7bRosBhbm8v4uFBeBuTnZsfapump');
     const SHUFF_DECIMALS = 9;
+    const HOLE_IN_ONE_CHANCE = 1 / 10000; // 1 in 10,000 chance
+    const PIXELS_TO_FEET = 0.3; // Conversion factor for distance display
     
     // Game State
     let walletAddress = null;
@@ -223,11 +240,32 @@
     let connection = null;
     let animationFrameId = null;
     let lastTransactionSignature = null;
+    let gameState = {
+      ballPosition: { x: 50, y: 200 },
+      ballVelocity: { x: 0, y: 0 },
+      isMoving: false,
+      strokes: 0,
+      lastSwingAmount: 0,
+      holePosition: { x: 740, y: 200 },
+      holeRadius: 5,
+      ballRadius: 8,
+      terrain: [],
+      hazards: {
+        water: [],
+        sand: []
+      },
+      wind: { x: 0, y: 0 },
+      gameActive: false,
+      disqualified: false,
+      canvasWidth: 800,
+      canvasHeight: 400
+    };
 
     // DOM Elements
     const connectBtn = document.getElementById('connect-wallet-btn');
     const disconnectBtn = document.getElementById('disconnect-btn');
     const refreshBtn = document.getElementById('refresh-btn');
+    const newGameBtn = document.getElementById('new-game-btn');
     const walletAddressSpan = document.getElementById('wallet-address');
     const walletBalanceSpan = document.getElementById('wallet-balance');
     const swingAmountInput = document.getElementById('swing-amount');
@@ -238,6 +276,9 @@
     const leaderboardList = document.getElementById('leaderboard-list');
     const lastTxInfo = document.getElementById('last-tx-info');
     const lastTxLink = document.getElementById('last-tx-link');
+    const strokeCountSpan = document.getElementById('stroke-count');
+    const distanceToHoleSpan = document.getElementById('distance-to-hole');
+    const gameStatusSpan = document.getElementById('game-status');
 
     // Initialize Connection
     async function initializeConnection() {
@@ -310,173 +351,4 @@
         walletAddress = walletPublicKey.toString();
         
         // Update UI
-        walletAddressSpan.textContent = `${walletAddress.slice(0,4)}...${walletAddress.slice(-4)}`;
-        document.getElementById('wallet-info').style.display = 'block';
-        swingBtn.disabled = false;
-        connectBtn.textContent = "Wallet Connected";
-        disconnectBtn.disabled = false;
-        
-        // Get balance
-        const balance = await getShuffBalance(walletPublicKey);
-        walletBalanceSpan.textContent = balance;
-        
-        statusDiv.textContent = "Wallet connected successfully!";
-        statusDiv.style.color = "#2ecc71";
-        
-        // Load leaderboard
-        loadLeaderboard();
-      } catch (err) {
-        statusDiv.textContent = `Error: ${err.message}`;
-        statusDiv.style.color = "#e74c3c";
-        connectBtn.disabled = false;
-        console.error("Connection error:", err);
-      }
-    }
-
-    // Disconnect Wallet
-    async function disconnectWallet() {
-      try {
-        if (window.solana && window.solana.isPhantom) {
-          await window.solana.disconnect();
-        }
-        
-        walletAddress = null;
-        walletPublicKey = null;
-        
-        document.getElementById('wallet-info').style.display = 'none';
-        connectBtn.textContent = "Connect Phantom Wallet";
-        connectBtn.disabled = false;
-        disconnectBtn.disabled = true;
-        swingBtn.disabled = true;
-        walletBalanceSpan.textContent = "0";
-        
-        statusDiv.textContent = "Wallet disconnected";
-        statusDiv.style.color = "#2ecc71";
-      } catch (err) {
-        console.error("Disconnection error:", err);
-        statusDiv.textContent = "Error disconnecting wallet";
-        statusDiv.style.color = "#e74c3c";
-      }
-    }
-
-    // Load Leaderboard (placeholder - implement your actual leaderboard logic)
-    async function loadLeaderboard() {
-      leaderboardList.innerHTML = "<li>Loading leaderboard...</li>";
-      // Implement your leaderboard fetching logic here
-      setTimeout(() => {
-        leaderboardList.innerHTML = `
-          <li>1. Player1 - Hole in 1! 🏆</li>
-          <li>2. Player2 - 2 strokes</li>
-          <li>3. Player3 - 3 strokes</li>
-        `;
-      }, 1000);
-    }
-
-    // Event Listeners
-    connectBtn.addEventListener('click', connectWallet);
-    disconnectBtn.addEventListener('click', disconnectWallet);
-    refreshBtn.addEventListener('click', () => {
-      window.location.reload();
-    });
-    
-    swingBtn.addEventListener('click', async () => {
-      const amount = parseFloat(swingAmountInput.value);
-      if (!amount || amount <= 0) {
-        statusDiv.textContent = "Please enter a valid amount";
-        statusDiv.style.color = "#e74c3c";
-        return;
-      }
-      
-      // Implement your swing logic here
-      statusDiv.textContent = `Swinging with ${amount} SHUFF...`;
-      statusDiv.style.color = "#3498db";
-      
-      // This is where you would implement the golf game mechanics
-      // For now, just show a message
-      setTimeout(() => {
-        statusDiv.textContent = "Swing complete! Implement game logic here.";
-        statusDiv.style.color = "#2ecc71";
-      }, 1500);
-    });
-    
-    // Auto-connect if returning user
-    window.addEventListener('load', async () => {
-      try {
-        if (window.solana && window.solana.isPhantom) {
-          // Initialize connection first
-          await initializeConnection();
-          
-          // Try silent connect
-          const response = await window.solana.connect({ onlyIfTrusted: true });
-          walletPublicKey = response.publicKey;
-          walletAddress = walletPublicKey.toString();
-          
-          walletAddressSpan.textContent = `${walletAddress.slice(0,4)}...${walletAddress.slice(-4)}`;
-          document.getElementById('wallet-info').style.display = 'block';
-          swingBtn.disabled = false;
-          connectBtn.textContent = "Wallet Connected";
-          disconnectBtn.disabled = false;
-          
-          const balance = await getShuffBalance(walletPublicKey);
-          walletBalanceSpan.textContent = balance;
-          
-          loadLeaderboard();
-        }
-      } catch (err) {
-        console.log("Auto-connect skipped:", err);
-      }
-    });
-    
-    // Initialize the canvas for the golf game
-    window.addEventListener('load', () => {
-      const canvas = document.getElementById('game-canvas');
-      const ctx = canvas.getContext('2d');
-      
-      // Set canvas dimensions
-      canvas.width = 800;
-      canvas.height = 400;
-      
-      // Draw initial golf course
-      drawGolfCourse(ctx, canvas.width, canvas.height);
-    });
-
-    // Draw golf course (placeholder)
-    function drawGolfCourse(ctx, width, height) {
-      // Green background
-      ctx.fillStyle = '#2ecc71';
-      ctx.fillRect(0, 0, width, height);
-      
-      // Fairway
-      ctx.fillStyle = '#27ae60';
-      ctx.beginPath();
-      ctx.moveTo(50, height/2 - 50);
-      ctx.lineTo(width - 100, height/2 - 50);
-      ctx.lineTo(width - 50, height/2);
-      ctx.lineTo(width - 100, height/2 + 50);
-      ctx.lineTo(50, height/2 + 50);
-      ctx.closePath();
-      ctx.fill();
-      
-      // Hole
-      ctx.fillStyle = 'black';
-      ctx.beginPath();
-      ctx.arc(width - 60, height/2, 5, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // Tee box
-      ctx.fillStyle = '#f1c40f';
-      ctx.fillRect(30, height/2 - 20, 40, 40);
-      
-      // Ball
-      ctx.fillStyle = 'white';
-      ctx.beginPath();
-      ctx.arc(50, height/2, 8, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // Flag
-      ctx.fillStyle = 'red';
-      ctx.fillRect(width - 60, height/2 - 30, 3, 30);
-    }
-  </script>
-</body>
-</html>
+       
