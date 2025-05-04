@@ -290,6 +290,7 @@
       // Cancel any existing animation
       if (game.animationId) {
         cancelAnimationFrame(game.animationId);
+        game.animationId = null;
       }
       
       // Update UI
@@ -309,6 +310,7 @@
       if (game.isMoving) {
         cancelAnimationFrame(game.animationId);
         game.isMoving = false;
+        game.animationId = null;
       }
       
       game.ballPos = { ...TEE_BOX };
@@ -323,8 +325,8 @@
       if (game.isMoving || !game.gameActive) return;
       
       const power = parseInt(powerInput.value);
-      if (isNaN(power) {
-        gameStatus.textContent = 'Please enter a valid power (1-100)';
+      if (isNaN(power) || power < 1 || power > 100) {
+        gameStatus.textContent = 'Please enter valid power (1-100)';
         gameStatus.style.color = '#e74c3c';
         return;
       }
@@ -426,14 +428,19 @@
       }
     }
     
-    // Initialize game
-    window.addEventListener('load', () => {
+    // Initialize game - THIS IS THE CRUCIAL FIX
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize canvas immediately
       initCanvas();
       
       // Set up event listeners
       startBtn.addEventListener('click', startGame);
       resetBtn.addEventListener('click', resetBall);
       swingBtn.addEventListener('click', swing);
+      
+      // Show initial state
+      gameStatus.textContent = 'Press Start Game to begin playing';
+      gameStatus.style.color = '#f1c40f';
     });
   </script>
 </body>
