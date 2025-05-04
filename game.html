@@ -98,6 +98,14 @@
       min-height: 30px;
       color: #f1c40f;
     }
+    #stroke-count {
+      font-weight: bold;
+      color: #2ecc71;
+    }
+    #distance-to-hole {
+      font-weight: bold;
+      color: #3498db;
+    }
     #leaderboard {
       background: rgba(0,0,0,0.5);
       padding: 15px;
@@ -145,6 +153,10 @@
     
     <div id="game-status">Press Start Game to begin playing</div>
     
+    <div id="game-info">
+      <p>Strokes: <span id="stroke-count">0</span> | Distance to Hole: <span id="distance-to-hole">-</span> ft</p>
+    </div>
+    
     <div id="leaderboard">
       <h2>Demo Leaderboard</h2>
       <ul id="leaderboard-list">
@@ -170,6 +182,8 @@
     const swingBtn = document.getElementById('swing-btn');
     const powerInput = document.getElementById('power-input');
     const gameStatus = document.getElementById('game-status');
+    const strokeCount = document.getElementById('stroke-count');
+    const distanceDisplay = document.getElementById('distance-to-hole');
     
     // Game State
     let game = {
@@ -177,7 +191,8 @@
       ballVel: { x: 0, y: 0 },
       isMoving: false,
       strokes: 0,
-      gameActive: false
+      gameActive: false,
+      animationId: null
     };
     
     // Initialize Canvas and Draw Course Immediately
@@ -187,7 +202,7 @@
       drawCourse();
     }
     
-    // Draw Golf Course (called immediately on load)
+    // Draw Golf Course
     function drawCourse() {
       // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -252,7 +267,6 @@
       ctx.lineWidth = 1;
       ctx.stroke();
       
-      // Update distance display
       updateDistance();
     }
     
@@ -261,35 +275,47 @@
       const dx = game.ballPos.x - HOLE.x;
       const dy = game.ballPos.y - HOLE.y;
       const distance = Math.sqrt(dx * dx + dy * dy) * PIXELS_TO_FEET;
-      document.getElementById('distance-to-hole').textContent = Math.round(distance);
+      distanceDisplay.textContent = Math.round(distance);
     }
     
     // Start new game
     function startGame() {
-      game = {
-        ballPos: { ...TEE_BOX },
-        ballVel: { x: 0, y: 0 },
-        isMoving: false,
-        strokes: 0,
-        gameActive: true
-      };
-      document.getElementById('stroke-count').textContent = '0';
+      // Reset game state
+      game.ballPos = { ...TEE_BOX };
+      game.ballVel = { x: 0, y: 0 };
+      game.isMoving = false;
+      game.strokes = 0;
+      game.gameActive = true;
+      
+      // Cancel any existing animation
+      if (game.animationId) {
+        cancelAnimationFrame(game.animationId);
+      }
+      
+      // Update UI
+      strokeCount.textContent = '0';
       gameStatus.textContent = 'Game started - Ready to swing!';
       gameStatus.style.color = '#2ecc71';
       startBtn.disabled = true;
       resetBtn.disabled = false;
       swingBtn.disabled = false;
+      
+      // Redraw course
       drawCourse();
     }
     
     // Reset ball to tee
     function resetBall() {
-      if (game.isMoving) return;
+      if (game.isMoving) {
+        cancelAnimationFrame(game.animationId);
+        game.isMoving = false;
+      }
+      
       game.ballPos = { ...TEE_BOX };
-      game.isMoving = false;
       drawCourse();
       gameStatus.textContent = 'Ball reset - Ready to swing!';
       gameStatus.style.color = '#2ecc71';
+      swingBtn.disabled = false;
     }
     
     // Make a swing
@@ -297,29 +323,34 @@
       if (game.isMoving || !game.gameActive) return;
       
       const power = parseInt(powerInput.value);
-      if (isNaN(power) || power < 1 || power > 100) {
-        gameStatus.textContent = 'Please enter valid power (1-100)';
+      if (isNaN(power) {
+        gameStatus.textContent = 'Please enter a valid power (1-100)';
         gameStatus.style.color = '#e74c3c';
         return;
       }
       
+      // Update game state
       game.strokes++;
-      document.getElementById('stroke-count').textContent = game.strokes;
+      strokeCount.textContent = game.strokes;
       
+      // Calculate direction to hole with some randomness
       const dx = HOLE.x - game.ballPos.x;
       const dy = HOLE.y - game.ballPos.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
+      const directionNoise = (Math.random() - 0.5) * 0.3;
       
+      // Calculate velocity based on power
       const powerFactor = power / 20;
-      const noise = (Math.random() - 0.5) * 0.3;
-      
       game.ballVel = {
-        x: (dx / distance + noise) * powerFactor,
-        y: (dy / distance + noise) * powerFactor
+        x: (dx / distance + directionNoise) * powerFactor,
+        y: (dy / distance + directionNoise) * powerFactor
       };
       
       game.isMoving = true;
+      swingBtn.disabled = true;
       gameStatus.textContent = 'Ball in flight...';
+      
+      // Start animation
       animate();
     }
     
@@ -346,8 +377,9 @@
       if (speed < 0.5) {
         game.isMoving = false;
         checkHole();
+        swingBtn.disabled = false;
       } else {
-        requestAnimationFrame(animate);
+        game.animationId = requestAnimationFrame(animate);
       }
     }
     
@@ -396,16 +428,12 @@
     
     // Initialize game
     window.addEventListener('load', () => {
-      initCanvas(); // Draw course immediately
+      initCanvas();
       
       // Set up event listeners
       startBtn.addEventListener('click', startGame);
       resetBtn.addEventListener('click', resetBall);
       swingBtn.addEventListener('click', swing);
-      
-      // Show initial state
-      gameStatus.textContent = 'Press Start Game to begin playing';
-      gameStatus.style.color = '#f1c40f';
     });
   </script>
 </body>
