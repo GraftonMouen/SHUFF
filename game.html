@@ -1,3 +1,6 @@
+Here's the complete fixed and revised code that shows the golf course immediately and makes the "Start Game" button work properly:
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -143,7 +146,7 @@
       <button id="swing-btn" disabled>Swing!</button>
     </div>
     
-    <div id="game-status">Press Start Game to begin</div>
+    <div id="game-status">Press Start Game to begin playing</div>
     
     <div id="leaderboard">
       <h2>Demo Leaderboard</h2>
@@ -180,14 +183,14 @@
       gameActive: false
     };
     
-    // Initialize Canvas
+    // Initialize Canvas and Draw Course Immediately
     function initCanvas() {
       canvas.width = 800;
       canvas.height = 400;
       drawCourse();
     }
     
-    // Draw Golf Course
+    // Draw Golf Course (called immediately on load)
     function drawCourse() {
       // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -243,16 +246,14 @@
       ctx.lineWidth = 2;
       ctx.stroke();
       
-      // Draw ball if not in tee position
-      if (game.ballPos.x !== TEE_BOX.x || game.ballPos.y !== TEE_BOX.y) {
-        ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.arc(game.ballPos.x, game.ballPos.y, BALL_RADIUS, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
+      // Draw ball
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      ctx.arc(game.ballPos.x, game.ballPos.y, BALL_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 1;
+      ctx.stroke();
       
       // Update distance display
       updateDistance();
@@ -299,8 +300,8 @@
       if (game.isMoving || !game.gameActive) return;
       
       const power = parseInt(powerInput.value);
-      if (isNaN(power) {
-        gameStatus.textContent = 'Please enter a valid power (1-100)';
+      if (isNaN(power) || power < 1 || power > 100) {
+        gameStatus.textContent = 'Please enter valid power (1-100)';
         gameStatus.style.color = '#e74c3c';
         return;
       }
@@ -398,10 +399,16 @@
     
     // Initialize game
     window.addEventListener('load', () => {
-      initCanvas();
+      initCanvas(); // Draw course immediately
+      
+      // Set up event listeners
       startBtn.addEventListener('click', startGame);
       resetBtn.addEventListener('click', resetBall);
       swingBtn.addEventListener('click', swing);
+      
+      // Show initial state
+      gameStatus.textContent = 'Press Start Game to begin playing';
+      gameStatus.style.color = '#f1c40f';
     });
   </script>
 </body>
