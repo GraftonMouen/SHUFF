@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>$SHUFF Whitepaper - The Shuffler Coin</title>
+    <style>
+        :root {
+            --primary: #2A9134; /* Golf course green */
+            --secondary: #F5D742; /* Golf ball yellow */
+            --dark: #1A1A1A;
+            --light: #F8F9FA;
+            --accent: #D32F2F; /* For important elements */
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background-color: var(--light);
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            border-bottom: 5px solid var(--secondary);
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .logo {
+            height: 80px;
+            margin-bottom: 1rem;
+        }
+        
+        .version {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-top: 1rem;
+        }
+        
+        section {
+            margin-bottom: 3rem;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h2 {
+            color: var(--primary);
+            border-bottom: 2px solid var(--secondary);
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+        }
+        
+        h3 {
+            color: var(--dark);
+        }
+        
+        .mission-statement {
+            background-color: #E8F5E9;
+            padding: 1.5rem;
+            border-left: 4px solid var(--primary);
+            margin: 1.5rem 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        .code-block {
+            background-color: #f5f5f5;
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: monospace;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+        
+        .roadmap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 2rem 0;
+        }
+        
+        .roadmap-phase {
+            flex: 1;
+            min-width: 250px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .phase-title {
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .phase-date {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        
+        .cta {
+            text-align: center;
+            margin: 3rem 0;
+            padding: 2rem;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 8px;
+        }
+        
+        .cta a {
+            color: var(--secondary);
+            font-weight: bold;
+            text-decoration: none;
+        }
+        
+        .cta a:hover {
+            text-decoration: underline;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 2rem;
+            border-top: 1px solid #ddd;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .download-btn {
+            display: inline-block;
+            background-color: var(--secondary);
+            color: var(--dark);
+            padding: 0.8rem 1.5rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .download-btn:hover {
+            background-color: #E6C229;
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 768px) {
+            .roadmap {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <img src="https://www.shufflers.xyz/ShuffCoin.png" alt="$SHUFF Logo" class="logo">
+            <h1>$SHUFF Whitepaper</h1>
+            <p class="subtitle">The Official Documentation of The Shuffler Coin</p>
+            <p class="version">Version 1.0 | shufflers.xyz</p>
+            <a href="$SHUFF-Whitepaper.pdf" class="download-btn" download>Download PDF</a>
+        </div>
+    </header>
+    
+    <div class="container">
+        <section id="abstract">
+            <h2>1. Introduction</h2>
+            <h3>1.1 Overview</h3>
+            <p>$SHUFF is the <strong>golf-themed memecoin</strong> merging crypto degeneracy with real-world impact. Built on transparency and humor, it fuels:</p>
+            <ul>
+                <li>A <strong>Rust-powered golf game</strong> (play-to-earn, NFTs, betting)</li>
+                <li><strong>Community giveaways</strong> and golf charity donations</li>
+                <li><strong>Sustainable tokenomics</strong> (1B cap, burns, and revenue-sharing)</li>
+            </ul>
+            
+            <div class="mission-statement">
+                <h3>1.2 Mission Statement</h3>
+                <p>⛳ <strong>Grow golf</strong> by onboarding crypto degens</p>
+                <p>🎮 <strong>Build a self-sustaining game economy</strong> (Rust backend)</p>
+                <p>💸 <strong>Give back</strong> (charities + player rewards)</p>
+            </div>
+        </section>
+        
+        <section id="tokenomics">
+            <h2>2. Tokenomics</h2>
+            <h3>2.1 $SHUFF Token</h3>
+            <ul>
+                <li><strong>Ticker:</strong> $SHUFF</li>
+                <li><strong>Chain:</strong> Solana</li>
+                <li><strong>Supply:</strong> 1,000,000,000 (1B) – <strong>Never minted again</strong></li>
+            </ul>
+            
+            <h3>2.2 Allocation</h3>
+            <table>
+                <tr>
+                    <th>Category</th>
+                    <th>%</th>
+                    <th>Purpose</th>
+                </tr>
+                <tr>
+                    <td>Public Sale</td>
+                    <td>60%</td>
+                    <td>Fair launch</td>
+                </tr>
+                <tr>
+                    <td>Game Rewards</td>
+                    <td>20%</td>
+                    <td>In-game $SHUFF earnings</td>
+                </tr>
+                <tr>
+                    <td>Liquidity</td>
+                    <td>10%</td>
+                    <td>DEX stability</td>
+                </tr>
+                <tr>
+                    <td>Team (Locked)</td>
+                    <td>5%</td>
+                    <td>12-month vesting</td>
+                </tr>
+                <tr>
+                    <td>Charity</td>
+                    <td>5%</td>
+                    <td>Junior golf programs + giveaways</td>
+                </tr>
+            </table>
+            
+            <h3>2.3 Deflationary Mechanisms</h3>
+            <ul>
+                <li><strong>Game fees burn 2% of $SHUFF</strong> from in-game transactions</li>
+                <li><strong>Quarterly charity burns</strong> based on revenue performance</li>
+            </ul>
+        </section>
+        
+        <section id="game">
+            <h2>3. The Shuffler Golf Game</h2>
+            <h3>3.1 Features</h3>
+            <ul>
+                <li><strong>Rust-powered</strong> for speed and security</li>
+                <li><strong>Earn $SHUFF</strong> by winning tournaments</li>
+                <li><strong>NFT Clubs/Courses</strong> (tradeable assets)</li>
+                <li><strong>Bet $SHUFF</strong> on PvP matches</li>
+                <li><strong>Sponsored tournaments</strong> with revenue sharing</li>
+            </ul>
+            
+            <h3>3.2 Code Integration</h3>
+            <div class="code-block">
+                <pre>fn award_prize(player: Golfer) -> Result&lt;Hodl, Error&gt; {
+    if player.swing == "perfect" {
+        Ok(player.wallet.transfer(SHUFF_PRIZE))
+    } else {
+        Err(Error::ShankDetected)
+    }
+}</pre>
+            </div>
+            <p>This Rust snippet demonstrates how tournament winners are automatically paid out in $SHUFF tokens.</p>
+        </section>
+        
+        <section id="roadmap">
+            <h2>4. Roadmap</h2>
+            <div class="roadmap">
+                <div class="roadmap-phase">
+                    <div class="phase-title">Phase 1: Launch & Community</div>
+                    <div class="phase-date">Q3 2025</div>
+                    <ul>
+                        <li>Token launch (Fair Distribution)</li>
+                        <li>Early-access Rust game demo</li>
+                        <li>First charity donation</li>
+                    </ul>
+                </div>
+                
+                <div class="roadmap-phase">
+                    <div class="phase-title">Phase 2: Game Expansion</div>
+                    <div class="phase-date">Q4 2025 – Q1 2025</div>
+                    <ul>
+                        <li>Full game release (Steam/Web)</li>
+                        <li>NFT marketplace for golf gear</li>
+                        <li>Sponsored tournaments</li>
+                    </ul>
+                </div>
+                
+                <div class="roadmap-phase">
+                    <div class="phase-title">Phase 3: Ecosystem Growth</div>
+                    <div class="phase-date">2026+</div>
+                    <ul>
+                        <li>$SHUFF-powered betting platform</li>
+                        <li>Real-world golf partnerships</li>
+                        <li>1M+ active players goal</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        
+        <section id="charity">
+            <h2>5. Charity & Community</h2>
+            <h3>5.1 Giving Back</h3>
+            <p><strong>5% of all revenue</strong> goes to:</p>
+            <ul>
+                <li>Youth golf programs</li>
+                <li>Environmental golf course sustainability</li>
+                <li>Community giveaways (e.g., "Win a Round at Pebble Beach")</li>
+            </ul>
+            
+            <h3>5.2 Transparency</h3>
+            <ul>
+                <li>Quarterly public reports on charity distributions</li>
+                <li>On-chain proof of burns & donations</li>
+                <li>Community voting on future charity recipients</li>
+            </ul>
+        </section>
+        
+        <section id="why-invest">
+            <h2>6. Why Invest in $SHUFF?</h2>
+            <ul>
+                <li>✅ <strong>Real Utility</strong> – Not just a memecoin; a gaming & rewards ecosystem</li>
+                <li>✅ <strong>Charity Focus</strong> – Profits fund golf growth & good causes</li>
+                <li>✅ <strong>Limited Supply</strong> – 1B cap with burns = long-term value</li>
+                <li>✅ <strong>Fun First</strong> – Golf + crypto + degeneracy = viral potential</li>
+                <li>✅ <strong>Rust-Powered</strong> – Serious tech behind the memes</li>
+            </ul>
+        </section>
+        
+        <div class="cta">
+            <h2>Ready to Join the Shuffler Revolution?</h2>
+            <p>Visit <a href="https://www.shufflers.xyz">shufflers.xyz</a> to get started</p>
+            <p>Follow us on [Twitter] | Join our [Discord]</p>
+        </div>
+        
+        <section id="disclaimer">
+            <h2>Legal Disclaimer</h2>
+            <p>$SHUFF is a memecoin with utility. This whitepaper is not financial advice. Always DYOR. Golf at your own risk.</p>
+            <p>The information contained in this whitepaper is subject to change as the project evolves.</p>
+        </section>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <p>© 2024 $SHUFF (The Shuffler Coin). All rights reserved.</p>
+            <p>shufflers.xyz | Version 1.0</p>
+        </div>
+    </footer>
+</body>
+</html>
